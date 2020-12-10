@@ -1,0 +1,20 @@
+name: dsvae
+
+channels:
+  - pytorch
+  - defaults
+  - conda-forge
+
+dependencies:
+  - python
+  - pytorch==1.7.0
+  - pytest>=6.0
+  - flake8
+  - rope
+  - pip
+
+  - pip:
+    - note_seq
+    - onnx
+    - onnxruntime
+    - -e .
