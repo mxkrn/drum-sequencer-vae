@@ -3,9 +3,7 @@ import os
 from pathlib import Path
 
 
-def init_logger(
-    name: str = "dsvae", level: int = logging.INFO
-) -> logging.Logger:
+def init_logger(name: str = "dsvae", level: int = logging.INFO) -> logging.Logger:
 
     logger = logging.getLogger(name)
     if not len(logger.handlers):

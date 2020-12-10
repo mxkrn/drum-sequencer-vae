@@ -1,13 +1,15 @@
 import numpy as np
 from numpy.testing import assert_almost_equal
 
-from dsvae.data.augmentor.note_sequence import NoteSequenceHandler, sequence_to_tensor
+from dsvae.data.note_sequence import NoteSequenceDataset
 
 
-def test_sequence_handler_properties(files):
+def test_sequence_handler_properties(files, pitch_mapping):
 
     for midi_file in files:
-        sequence_handler = NoteSequenceHandler.from_midi(midi_file)
+        sequence_handler = NoteSequenceDataset.from_midi(
+            midi_file, pitch_mapping["pitches"]
+        )
         assert sequence_handler.minute == 60
         assert sequence_handler.second == 60
         assert sequence_handler.meter == (4, 4)
@@ -18,10 +20,12 @@ def test_sequence_handler_properties(files):
         assert sequence_handler.seconds_per_bar == 2.0
 
 
-def test_monophonic_1bar(files):
+def test_monophonic_1bar(files, pitch_mapping):
     for midi_file in files:
         if midi_file.stem == "M-1":  # monophonic 1-bar
-            sequence_handler = NoteSequenceHandler.from_midi(midi_file)
+            sequence_handler = NoteSequenceDataset.from_midi(
+                midi_file, pitch_mapping["pitches"]
+            )
             assert sequence_handler.frame_lengths == [0.0, 2.0]
             assert round(sequence_handler.duration_seconds, 5) == 1.55729
 
@@ -36,10 +40,12 @@ def test_monophonic_1bar(files):
                 assert_almost_equal(delta, duration)
 
 
-def test_polyphonic_1bar(files):
+def test_polyphonic_1bar(files, pitch_mapping):
     for midi_file in files:
         if midi_file.stem == "P-1":  # polyphonic 1-bar
-            sequence_handler = NoteSequenceHandler.from_midi(midi_file)
+            sequence_handler = NoteSequenceDataset.from_midi(
+                midi_file, pitch_mapping["pitches"]
+            )
             # test length
             assert sequence_handler.frame_lengths == [0.0, 2.0]
             assert round(sequence_handler.duration_seconds, 5) == 1.93229
@@ -61,51 +67,34 @@ def test_polyphonic_1bar(files):
             assert pitches == [36, 44, 39]
 
 
-def test_polyphonic_multiple_bars(files):
+def test_polyphonic_multiple_bars(files, pitch_mapping):
     for midi_file in files:
         file_hash = midi_file.stem.split("-")
         length_in_bars = file_hash[-1]
         if length_in_bars == str(2):
-            sequence_handler = NoteSequenceHandler.from_midi(midi_file)
+            sequence_handler = NoteSequenceDataset.from_midi(
+                midi_file, pitch_mapping["pitches"]
+            )
             assert sequence_handler.duration_bars <= 2
             assert sequence_handler.duration_bars > 1.8
             assert sequence_handler.frame_lengths == [0.0, 2.0, 4.0]
-
-            count = 0
-            for f in sequence_handler.frames:
-                count += 1
-            assert count == 2
+            assert len(sequence_handler.data) == 2
         if length_in_bars == str(1.5):
-            sequence_handler = NoteSequenceHandler.from_midi(midi_file)
+            sequence_handler = NoteSequenceDataset.from_midi(
+                midi_file, pitch_mapping["pitches"]
+            )
             assert sequence_handler.frame_lengths == [0.0, 2.0, 4.0]
             assert len(sequence_handler.base_note_sequence.notes) == 6
             assert round(sequence_handler.duration_seconds, 5) == 2.55208
 
 
-def test_split_into_frames(files):
-    for midi_file in files:
-        if midi_file.stem == "M-1.5":
-            m1half_sequence_handler = NoteSequenceHandler.from_midi(midi_file)
-            for i, f in enumerate(m1half_sequence_handler.frames):
-                if i == 1:
-                    assert len(f.notes) == 2
-                if i == 0:
-                    assert len(f.notes) == 4
-        if midi_file.stem == "M-1":
-            sequence_handler = NoteSequenceHandler.from_midi(midi_file)
-            for frame in sequence_handler.frames:
-                assert frame.notes == sequence_handler.base_note_sequence.notes
-
-
 def test_sequence_to_tensor(files, pitch_mapping):
     for midi_file in files:
-        sequence_handler = NoteSequenceHandler.from_midi(midi_file)
+        sequence_handler = NoteSequenceDataset.from_midi(
+            midi_file, pitch_mapping["pitches"]
+        )
 
-        for seq in sequence_handler.frames:
-            tensor = sequence_to_tensor(seq, pitch_mapping["pitches"])
-            inputs = tensor.inputs[0]
-            targets = tensor.outputs[0]
-            assert inputs.sum() == len(seq.notes)
+        for inputs, targets in sequence_handler.data:
             onsets = inputs[:, :9]
             inputs_vo = inputs[:, 9:]
             velocities = targets[:, 9:18]
@@ -118,11 +107,11 @@ def test_sequence_to_tensor(files, pitch_mapping):
             for step in range(len(onsets)):
                 for channel in range(len(onsets[0])):
                     assert onsets[step][channel] >= velocities[step][channel]
-                    if onsets[step][channel] == 1.:
-                        assert velocities[step][channel] > 0.
+                    if onsets[step][channel] == 1.0:
+                        assert velocities[step][channel] > 0.0
                     else:
-                        assert velocities[step][channel] == 0.
-                        assert offsets[step][channel] == 0.
+                        assert velocities[step][channel] == 0.0
+                        assert offsets[step][channel] == 0.0
 
         # TODO: Write tests for specific fixture instances
         # file_hash = midi_file.stem.split("-")
