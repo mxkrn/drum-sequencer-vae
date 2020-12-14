@@ -8,16 +8,10 @@ from typing import List, Tuple
 
 from dsvae.data.converter.groove import GrooveConverter
 from dsvae.utils.ops import init_logger
-from dsvae.data.mutations import (
-    Normalize,
-    VelocityScaling,
-    OffsetsScaling,
-    InstrumentDropout,
-)
 
 
 def note_sequence_to_tensor(
-    note_sequence: NoteSequence, pitch_classes: dict, meter: Tuple[int, int] = (4, 4),
+    note_sequence: NoteSequence, pitch_mapping: dict, meter: Tuple[int, int] = (4, 4),
 ):
     """Helper function to convert a NoteSequence protobuf to a numpy array.
     """
@@ -27,7 +21,7 @@ def note_sequence_to_tensor(
     converter = GrooveConverter(
         steps_per_quarter=meter[0],
         quarters_per_bar=meter[1],
-        pitch_classes=pitch_classes,
+        pitch_classes=pitch_mapping,
         humanize=True,
     )
     tensor = converter.to_tensors(quantized_sequence)
@@ -39,6 +33,7 @@ class NoteSequenceDataset(Dataset):
     second = 60
     meter = (4, 4)
     bars_per_frame = 1
+    sequence_length = bars_per_frame*16
 
     def __init__(
         self,
@@ -55,6 +50,7 @@ class NoteSequenceDataset(Dataset):
         self.base_note_sequence = note_sequence
         self.qpm = note_sequence.tempos[0].qpm
         self.pitch_mapping = pitch_mapping
+        self.channels = len(pitch_mapping)
 
         try:
             self.meter = note_sequence.meter
@@ -63,12 +59,6 @@ class NoteSequenceDataset(Dataset):
                 f"{filepath} does not contain time signature information."
             )
 
-        self.mutations = dict(
-            normalize=Normalize(),
-            velocity_scaling=VelocityScaling(93, 4),
-            offset_scaling=OffsetsScaling(2),
-            instrument_dropout=InstrumentDropout(),
-        )
         self._meiosis(generations)
 
     @classmethod
@@ -87,27 +77,17 @@ class NoteSequenceDataset(Dataset):
         *WARNING* In some cultures this could be considered incestuous.
         """
         self.data = []
-        for frame_idx in range(1, len(self.frame_lengths)):
-            note_sequence = sequences_lib.extract_subsequence(
-                self.base_note_sequence,
-                self.frame_lengths[frame_idx - 1],
-                self.frame_lengths[frame_idx],
-            )
-            tensor = note_sequence_to_tensor(note_sequence, self.pitch_mapping)
-            inputs = tensor.inputs[0]
-            targets = tensor.outputs[0]
-
-            # TODO: Implement mutations
-            # for name, op in self.mutations.items():
-            #     targets = op(targets)
-            #     if name == "instrument_dropout":
-            #         inputs = op(inputs)
-            sample = (inputs, targets)
-            self.data.append(sample)
+        tensor = note_sequence_to_tensor(self.base_note_sequence, self.pitch_mapping)
+        inputs = tensor.inputs[0].reshape((-1, self.sequence_length, self.channels*3))
+        targets = tensor.outputs[0].reshape((-1, self.sequence_length, self.channels*3))
+        for input_frame in inputs:
+            for target_frame in targets:
+                sample = (input_frame, target_frame)
+                self.data.append(sample)
 
     def __getitem__(self, idx):
-        item = self.data[idx]
-        return item
+        inputs, targets = self.data[idx]
+        return inputs, targets, self.name, idx
 
     def __len__(self):
         return len(self.data)

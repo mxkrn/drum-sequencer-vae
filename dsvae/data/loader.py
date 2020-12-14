@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from torch.utils.data import DataLoader, ConcatDataset
 
-from dsvae.data.note_sequence import NoteSequenceDataset
+from dsvae.data.dataset import NoteSequenceDataset
 
 
 class Loader:
