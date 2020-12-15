@@ -2,6 +2,15 @@ import json
 import pytest
 from pathlib import Path
 
+from dsvae.utils.hparams import get_hparams
+from dsvae.utils.ops import init_logger
+from dsvae.data.loader import Loader
+
+
+@pytest.fixture
+def logger():
+    return init_logger('test')
+
 
 @pytest.fixture
 def path_to_data() -> Path:
@@ -21,3 +30,26 @@ def pitch_mapping(path_to_data):
     for filepath in path_to_data.glob("**/pitch_mapping.json"):
         with open(filepath, "r") as f:
             return json.load(f)
+
+
+@pytest.fixture
+def sample(path_to_data):
+    batch_size = 1
+    dataset_name = "gmd"
+    loader = Loader(path_to_data, dataset_name, batch_size)
+    for batch in loader:
+        return batch
+
+
+@pytest.fixture
+def hparams(logger):
+    hparams = get_hparams(logger)
+    return hparams
+
+
+@pytest.fixture
+def channels(path_to_data):
+    batch_size = 1
+    dataset_name = "gmd"
+    loader = Loader(path_to_data, dataset_name, batch_size)
+    return loader.channels

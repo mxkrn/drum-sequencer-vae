@@ -1,4 +1,5 @@
 import json
+from functools import cached_property
 from pathlib import Path
 from torch.utils.data import DataLoader, ConcatDataset
 
@@ -6,6 +7,7 @@ from dsvae.data.dataset import NoteSequenceDataset
 
 
 class Loader:
+
     def __init__(
         self,
         path_to_data: Path,
@@ -36,6 +38,8 @@ class Loader:
         self.shuffle = shuffle
         self.num_workers = num_workers
         self.invalid_files = []
+        self.channels = None  # will be set in _build
+        self.sequence_length = None
 
         self._build()
 
@@ -44,8 +48,11 @@ class Loader:
         for midi_file in self.midi_files:
             if midi_file in self.invalid_files:
                 continue
-
             ds = NoteSequenceDataset.from_midi(midi_file, self.pitch_mapping["pitches"])
+            if self.channels is None:
+                self.channels = ds.channels
+            if self.sequence_length is None:
+                self.sequence_length = ds.sequence_length
             if ds.valid_meter:
                 datasets.append(ds)
             else:
@@ -54,7 +61,9 @@ class Loader:
 
         self.dataset = ConcatDataset(datasets)
 
-    def __iter__(self,) -> DataLoader:
+    def __iter__(
+        self,
+    ) -> DataLoader:
         loader = DataLoader(
             self.dataset,
             shuffle=self.shuffle,
@@ -64,7 +73,7 @@ class Loader:
         )
         yield from loader
 
-    @property
+    @cached_property
     def pitch_mapping(self) -> dict:
         for fname in self.path_to_data.glob("**/*.json"):
             with open(fname, "r") as f:

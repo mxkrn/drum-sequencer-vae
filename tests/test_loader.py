@@ -8,8 +8,8 @@ def test_data_loader(path_to_data):
     dataset_name = "gmd"
     loader = Loader(path_to_data, dataset_name, batch_size)
     for batch in loader:
-        assert batch[0].shape == torch.Size([4, 16, 27])
-        assert batch[1].shape == torch.Size([4, 16, 27])
+        assert batch[0].shape == torch.Size([batch_size, 16, 27])
+        assert batch[1].shape == torch.Size([batch_size, 16, 27])
 
 
 # def test_gmd_dataset_constructor(path_to_data: Path, files: List[Path]):

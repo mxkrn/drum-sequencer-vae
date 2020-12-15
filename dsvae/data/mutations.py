@@ -13,6 +13,7 @@ class Mutation:
 
 class NoteDropout(Mutation):
     """Invokes a dropout operation on any note of the target sequence"""
+
     def __init__(self, channels: int, probability: float = 0.2):
         super(NoteDropout, self).__init__()
         self.channels = channels
@@ -25,7 +26,7 @@ class NoteDropout(Mutation):
 
     def _init_weights(self, tensor):
         weights = np.ones(
-            tensor[:, 0, :self.channels].unsqueeze(1).shape, device=tensor.device
+            tensor[:, 0, : self.channels].unsqueeze(1).shape, device=tensor.device
         )  # onsets-only
         batch_first = np.transpose(weights, 0, 1)
         return np.transpose(batch_first, 1, 2)
@@ -45,12 +46,22 @@ class InstrumentDropout(Mutation):
         super(InstrumentDropout, self).__init__()
         # TODO: Determine weights
         if weights is None:
-            self.weights = {0: 0.1, 1: 0.05, 2: 0.1, 3: 0.15, 4: 0.1,
-                            5: 0.1, 6: 0.1, 7: 0.1, 8: 0.1}
+            self.weights = {
+                0: 0.1,
+                1: 0.05,
+                2: 0.1,
+                3: 0.15,
+                4: 0.1,
+                5: 0.1,
+                6: 0.1,
+                7: 0.1,
+                8: 0.1,
+            }
 
     def call(self, tensor: np.ndarray) -> np.ndarray:
 
         pass
+
 
 # class Normalize(Operation):
 #     def __init__(self):

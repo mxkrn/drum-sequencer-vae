@@ -1,8 +1,9 @@
 from functools import cached_property
+import math
 from note_seq import sequences_lib, midi_io
 from note_seq.protobuf.music_pb2 import NoteSequence
-import math
 from pathlib import Path
+import torch
 from torch.utils.data import Dataset
 from typing import List, Tuple
 
@@ -11,10 +12,11 @@ from dsvae.utils.ops import init_logger
 
 
 def note_sequence_to_tensor(
-    note_sequence: NoteSequence, pitch_mapping: dict, meter: Tuple[int, int] = (4, 4),
+    note_sequence: NoteSequence,
+    pitch_mapping: dict,
+    meter: Tuple[int, int] = (4, 4),
 ):
-    """Helper function to convert a NoteSequence protobuf to a numpy array.
-    """
+    """Helper function to convert a NoteSequence protobuf to a numpy array."""
     quantized_sequence = sequences_lib.quantize_note_sequence(
         note_sequence, steps_per_quarter=meter[0]
     )
@@ -33,7 +35,7 @@ class NoteSequenceDataset(Dataset):
     second = 60
     meter = (4, 4)
     bars_per_frame = 1
-    sequence_length = bars_per_frame*16
+    sequence_length = bars_per_frame * 16
 
     def __init__(
         self,
@@ -55,9 +57,10 @@ class NoteSequenceDataset(Dataset):
         try:
             self.meter = note_sequence.meter
         except AttributeError:
-            self.logger.warning(
-                f"{filepath} does not contain time signature information."
-            )
+            pass
+            # self.logger.warning(
+            #     f"{filepath} does not contain time signature information."
+            # )
 
         self._meiosis(generations)
 
@@ -78,11 +81,14 @@ class NoteSequenceDataset(Dataset):
         """
         self.data = []
         tensor = note_sequence_to_tensor(self.base_note_sequence, self.pitch_mapping)
-        inputs = tensor.inputs[0].reshape((-1, self.sequence_length, self.channels*3))
-        targets = tensor.outputs[0].reshape((-1, self.sequence_length, self.channels*3))
+        inputs = tensor.inputs[0].reshape((-1, self.sequence_length, self.channels * 3))
+        targets = tensor.outputs[0].reshape(
+            (-1, self.sequence_length, self.channels * 3)
+        )
         for input_frame in inputs:
             for target_frame in targets:
-                sample = (input_frame, target_frame)
+                sample = (torch.tensor(input_frame, dtype=torch.float), 
+                          torch.tensor(target_frame, dtype=torch.float))
                 self.data.append(sample)
 
     def __getitem__(self, idx):
