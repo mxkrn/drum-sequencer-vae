@@ -6,9 +6,9 @@ import random
 import torch
 
 
-def init_logger(name: str = "dsvae", level: int = logging.INFO) -> logging.Logger:
+def init_logger(level: int = logging.INFO) -> logging.Logger:
 
-    logger = logging.getLogger(name)
+    logger = logging.getLogger()
     if not len(logger.handlers):
         logger.setLevel(level)
         handler = logging.StreamHandler()
@@ -16,7 +16,6 @@ def init_logger(name: str = "dsvae", level: int = logging.INFO) -> logging.Logge
         handler.setFormatter(format)
         handler.setLevel(level)
         logger.addHandler(handler)
-    return logger
 
 
 def init_seed(hparams):
@@ -30,15 +29,15 @@ def init_seed(hparams):
         torch.backends.cudnn.benchmark = False
 
 
-def load_path() -> Path:
-    try:
-        path = Path(os.environ["PATH_TO_DATA"])
-        return path
-    except KeyError:
-        raise EnvironmentError(
-            "Please set to PATH_TO_DATA as an environtment variable"
-            "pointing to your data directory."
-        )
+# def load_path() -> Path:
+#     try:
+#         path = Path(os.environ["PATH_TO_DATA"])
+#         return path
+#     except KeyError:
+#         raise EnvironmentError(
+#             "Please set to PATH_TO_DATA as an environtment variable"
+#             "pointing to your data directory."
+#         )
 
 
 def get_device(hparams):

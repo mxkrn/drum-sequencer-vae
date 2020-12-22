@@ -4,7 +4,7 @@ from pathlib import Path
 
 from dsvae.utils.hparams import get_hparams
 from dsvae.utils.ops import init_logger
-from dsvae.data.loader import Loader
+from dsvae.data.loader import NoteSequenceDataLoader
 
 
 @pytest.fixture
@@ -14,7 +14,7 @@ def logger():
 
 @pytest.fixture
 def path_to_data() -> Path:
-    return Path.cwd() / Path("tests/fixtures")
+    return Path.cwd() / Path("tests/fixtures/gmd")
 
 
 @pytest.fixture
@@ -33,16 +33,15 @@ def pitch_mapping(path_to_data):
 
 
 @pytest.fixture
-def hparams(logger):
-    hparams = get_hparams(logger)
+def hparams():
+    hparams = get_hparams()
     return hparams
 
 
 @pytest.fixture
 def sample(path_to_data):
-    batch_size = 8
-    dataset_name = "gmd"
-    loader = Loader(path_to_data, dataset_name, batch_size)
+    batch_size = 2
+    loader = NoteSequenceDataLoader(path_to_data, batch_size, "train")
     batch =  next(iter(loader))
     return batch
 
@@ -50,6 +49,5 @@ def sample(path_to_data):
 @pytest.fixture
 def channels(path_to_data):
     batch_size = 1
-    dataset_name = "gmd"
-    loader = Loader(path_to_data, dataset_name, batch_size)
+    loader = NoteSequenceDataLoader(path_to_data, batch_size, "train")
     return loader.channels

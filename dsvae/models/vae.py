@@ -7,7 +7,6 @@ from dsvae.models.decoder import LSTMDecoder
 
 
 class VAE(nn.Module):
-    
     def __init__(self, hparams: Dict[str, Union[int, float, str]], channels: int):
         super().__init__()
         self.input_size = hparams.input_size

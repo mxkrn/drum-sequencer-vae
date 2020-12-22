@@ -1,4 +1,5 @@
 from functools import cached_property
+import logging
 import math
 from note_seq import sequences_lib, midi_io
 from note_seq.protobuf.music_pb2 import NoteSequence
@@ -58,9 +59,6 @@ class NoteSequenceDataset(Dataset):
             self.meter = note_sequence.meter
         except AttributeError:
             pass
-            # self.logger.warning(
-            #     f"{filepath} does not contain time signature information."
-            # )
 
         self._meiosis(generations)
 
@@ -81,12 +79,19 @@ class NoteSequenceDataset(Dataset):
         """
         self.data = []
         tensor = note_sequence_to_tensor(self.base_note_sequence, self.pitch_mapping)
-        inputs = tensor.inputs[0].reshape((-1, self.sequence_length, self.channels * 3))
-        targets = tensor.outputs[0].reshape(
-            (-1, self.sequence_length, self.channels * 3)
-        )
-        for input_frame in inputs:
-            for target_frame in targets:
+
+        if len(tensor.inputs) == 0:
+            logging.getLogger(__name__).warning(f"Failed loading {self.filepath}")
+            pass
+        else:
+            inputs = tensor.inputs[0].reshape(
+                (-1, self.sequence_length, self.channels * 3)
+            )
+            targets = tensor.outputs[0].reshape(
+                (-1, self.sequence_length, self.channels * 3)
+            )
+            for i, input_frame in enumerate(inputs):
+                target_frame = targets[i]
                 sample = (
                     torch.tensor(input_frame, dtype=torch.float),
                     torch.tensor(target_frame, dtype=torch.float),

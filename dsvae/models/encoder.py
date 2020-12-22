@@ -7,6 +7,7 @@ class LSTMEncoder(nn.Module):
     def __init__(self, hparams):
         super().__init__()
         self.input_size = hparams.input_size
+        self.input_shape = hparams.input_shape
         self.hidden_size = hparams.hidden_size
         self.hidden_factor = hparams.hidden_factor
         self.n_layers = hparams.n_layers

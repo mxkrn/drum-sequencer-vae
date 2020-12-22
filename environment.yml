@@ -17,4 +17,5 @@ dependencies:
     - note_seq
     - onnx
     - onnxruntime
+    - wandb
     - -e .

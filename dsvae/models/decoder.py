@@ -7,6 +7,7 @@ class LSTMDecoder(nn.Module):
     def __init__(self, hparams):
         super().__init__()
         self.input_size = hparams.input_size
+        self.input_shape = hparams.input_shape
         self.latent_size = hparams.latent_size
         self.hidden_size = hparams.hidden_size
         self.output_size = hparams.input_size
@@ -34,8 +35,11 @@ class LSTMDecoder(nn.Module):
     def forward(
         self, input: torch.Tensor, gate: torch.Tensor, cell: torch.Tensor
     ) -> torch.Tensor:
-        gate = gate.view(self.hidden_factor, input.shape[0], self.hidden_size)
-        cell = cell.view(self.hidden_factor, input.shape[0], self.hidden_size)
+        # gate = gate.view(self.hidden_factor, input.shape[0], self.hidden_size).contiguous()
+        # cell = cell.view(self.hidden_factor, input.shape[0], self.hidden_size).contiguous()
+        # fix: RuntimeError - rnn: hx is not contiguous
+        gate = gate.contiguous()
+        cell = cell.contiguous()
         output, _ = self.lstm(input, (gate, cell))
         output = self.output_layer(output)
         return output
