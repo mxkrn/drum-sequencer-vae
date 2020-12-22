@@ -1,4 +1,6 @@
+import torch
 import torch.nn as nn
+from typing import Tuple
 
 
 class LSTMEncoder(nn.Module):
@@ -13,18 +15,19 @@ class LSTMEncoder(nn.Module):
 
         self._build()
 
-    def _build(self):
+    def _build(self) -> None:
         self.lstm = nn.LSTM(
             self.input_size,
             self.hidden_size,
             self.n_layers,
             dropout=self.dropout,
             bidirectional=self.bidirectional,
+            batch_first=True,
         )
         self.lstm.flatten_parameters()
 
-    def forward(self, inputs):
-        _, (gate, cell) = self.lstm(inputs)
-        gate = gate.view(inputs.shape[1], self.hidden_size * self.hidden_factor)
-        cell = cell.view(inputs.shape[1], self.hidden_size * self.hidden_factor)
-        return (gate, cell), inputs
+    def forward(self, input: torch.Tensor) -> Tuple[Tuple[torch.Tensor], torch.Tensor]:
+        output, (gate, cell) = self.lstm(input)
+        gate = gate.view(input.shape[0], self.hidden_factor * self.hidden_size)
+        cell = cell.view(input.shape[0], self.hidden_factor * self.hidden_size)
+        return (gate, cell), output

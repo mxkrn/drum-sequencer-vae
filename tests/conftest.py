@@ -33,18 +33,18 @@ def pitch_mapping(path_to_data):
 
 
 @pytest.fixture
-def sample(path_to_data):
-    batch_size = 1
-    dataset_name = "gmd"
-    loader = Loader(path_to_data, dataset_name, batch_size)
-    for batch in loader:
-        return batch
-
-
-@pytest.fixture
 def hparams(logger):
     hparams = get_hparams(logger)
     return hparams
+
+
+@pytest.fixture
+def sample(path_to_data):
+    batch_size = 8
+    dataset_name = "gmd"
+    loader = Loader(path_to_data, dataset_name, batch_size)
+    batch =  next(iter(loader))
+    return batch
 
 
 @pytest.fixture

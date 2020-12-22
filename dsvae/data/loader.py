@@ -7,7 +7,6 @@ from dsvae.data.dataset import NoteSequenceDataset
 
 
 class Loader:
-
     def __init__(
         self,
         path_to_data: Path,

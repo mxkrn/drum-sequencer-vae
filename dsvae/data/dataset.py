@@ -87,8 +87,10 @@ class NoteSequenceDataset(Dataset):
         )
         for input_frame in inputs:
             for target_frame in targets:
-                sample = (torch.tensor(input_frame, dtype=torch.float), 
-                          torch.tensor(target_frame, dtype=torch.float))
+                sample = (
+                    torch.tensor(input_frame, dtype=torch.float),
+                    torch.tensor(target_frame, dtype=torch.float),
+                )
                 self.data.append(sample)
 
     def __getitem__(self, idx):
