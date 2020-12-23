@@ -18,4 +18,5 @@ dependencies:
     - onnx
     - onnxruntime
     - wandb
+    - google-api-python-client
     - -e .
