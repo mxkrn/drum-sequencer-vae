@@ -4,9 +4,11 @@ from typing import Tuple, Dict, Union
 
 from dsvae.models.encoder import LSTMEncoder
 from dsvae.models.decoder import LSTMDecoder
+from dsvae.models.utils import NoteDropout
 
 
 class VAE(nn.Module):
+
     def __init__(self, hparams: Dict[str, Union[int, float, str]], channels: int):
         super().__init__()
         self.input_size = hparams.input_size
@@ -29,6 +31,7 @@ class VAE(nn.Module):
             self.latent_size, self.hidden_size * self.hidden_factor * 2
         )
 
+        self.note_dropout = NoteDropout()
         self.decoder = LSTMDecoder(hparams)
 
         self.onsets_act = nn.Sigmoid()
@@ -38,14 +41,14 @@ class VAE(nn.Module):
         # self._apply(self._init_params)
 
     def forward(
-        self, input: torch.Tensor, delta_z: torch.Tensor, note_dropout: float
+        self, input: torch.Tensor, delta_z: torch.Tensor, teacher_force_ratio: torch.Tensor
     ) -> Tuple[torch.Tensor, float]:
         mu, logvar = self._encode(input)
 
         z, z_loss = self._reparameterize(mu, logvar)
         z = torch.add(z, delta_z.to(z.device))  # Z-manipulation
 
-        output, z = self._decode(z, input, note_dropout.to(z.device))
+        output, z = self._decode(z, input, teacher_force_ratio)
         output = self._activation(output, self.channels)
 
         return output, z, z_loss
@@ -67,7 +70,7 @@ class VAE(nn.Module):
         return z, z_loss
 
     def _decode(
-        self, z: torch.Tensor, input: torch.Tensor, note_dropout: torch.Tensor
+        self, z: torch.Tensor, input: torch.Tensor, teacher_force_ratio: torch.Tensor
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         # get hidden representation
         hidden = self.from_latent(z)
@@ -75,6 +78,7 @@ class VAE(nn.Module):
         gate, cell = torch.split(hidden, self.hidden_size, -1)
 
         # TODO: Apply note dropout (teacher forcing)
+        input = self.note_dropout(input, teacher_force_ratio)
         output = self.decoder(input, gate, cell)
         return output, z
 

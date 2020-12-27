@@ -46,6 +46,7 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
             num_workers=hparams.num_workers,
         )
         lengths[split] = len([x for x in loaders[split]])
+    logger.info(f'Data loader is using {hparams.num_workers} worker threads')
 
     # model
     model = VAE(hparams, loaders["train"].channels)

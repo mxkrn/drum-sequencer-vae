@@ -1,5 +1,6 @@
 import abc
 import numpy as np
+import torch.nn as nn
 
 
 class Mutation:
@@ -11,11 +12,24 @@ class Mutation:
         raise NotImplementedError
 
 
-class NoteDropout(Mutation):
+class NoteDropout(nn.Module):
+
+    def __init__(self, channels: int, sequence_length: int):
+        super().__init__()
+
+    def forward(self, input: torch.Tensor, p: float) -> torch.Tensor:
+        ones = torch.ones(input.shape, device=input.device)
+        zeros = torch.zeros(input.shape, device=input.device)
+        mask = np.random.random_sample(input.shape)
+        mask = np.where(mask > p, mask, zeros)
+        return torch.mul(input, mask)
+
+
+class MetricNoteDropout(nn.Module):
     """Invokes a dropout operation on any note of the target sequence"""
 
-    def __init__(self, channels: int, probability: float = 0.2):
-        super(NoteDropout, self).__init__()
+    def __init__(self, channels: int):
+        super().__init__()
         self.channels = channels
 
     def call(self, tensor: np.ndarray) -> np.ndarray:
