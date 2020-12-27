@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import os
 from typing import Dict, Any
 
 
@@ -41,6 +42,9 @@ def get_hparams(**kwargs) -> Dict[str, Any]:
         batch_size=4,
         channels=9,  # number of instruments
         sequence_length=16,
+        file_shuffle=True,  # shuffles data loading across different MIDI patterns
+        pattern_shuffle=True,  # shuffle sub-patterns within a MIDI pattern
+        scale_factor=2,
         model="vae",
         bidirectional=False,
         n_layers=2,
@@ -49,15 +53,17 @@ def get_hparams(**kwargs) -> Dict[str, Any]:
         lstm_dropout=0.1,
         # teacher_force_ratio=0.0,
         beta=1e4,
-        max_anneal=10,
+        max_anneal=100,
         attention=False,
         disentangle=False,
-        epochs=12,
+        epochs=250,
         lr=1e-4,
         warm_latent=5,
         early_stop=30,
         device="",
     )
-    hparams = parse(hparams)
+    debug = bool(int(os.environ["_PYTEST_RAISE"]))
+    if not debug:
+        hparams = parse(hparams)
     hparams = process(hparams)
     return hparams

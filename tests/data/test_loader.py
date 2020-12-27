@@ -1,19 +1,20 @@
 import pytest
+from pathlib import Path
 import torch
 
 from dsvae.data.loader import NoteSequenceDataLoader, train_test_split
 
 
-class DummyDataset(torch.utils.data.Dataset):
-    def __init__(self, name):
-        self.name = name
+# TODO: More tests for:
+# - file shuffling
+# - worker loading
+# - performance
 
 
 def test_gmd_data_loader(path_to_data):
     batch_size = 4
-    # dataset_name = "gmd"
     for split in ["train", "valid", "test"]:
-        loader = NoteSequenceDataLoader(path_to_data, batch_size, split)
+        loader = NoteSequenceDataLoader(path_to_data, batch_size, split, False, False)
         length = len([x for x in loader]) * batch_size
         for batch in loader:
             assert batch[0].shape == torch.Size([batch_size, 16, 27])
@@ -22,29 +23,29 @@ def test_gmd_data_loader(path_to_data):
 
 def test_train_test_split_unique(path_to_data):
     ds_per_key = 5
-    datasets = []
+    files = []
     for i in range(ds_per_key):
-        datasets.append(DummyDataset(name=f"/some/path/{i}.mid"))
+        files.append(Path(f"/some/path/{i}.mid"))
 
     data_splits = {"train": 0.4, "valid": 0.3, "test": 0.3}
 
-    split_datasets = train_test_split(
-        datasets, splits=data_splits
+    split_files = train_test_split(
+        files, splits=data_splits
     )
 
-    train_names = set([ds.name for ds in split_datasets["train"]])
-    valid_names = set([ds.name for ds in split_datasets["valid"]])
-    test_names = set([ds.name for ds in split_datasets["test"]])
+    train_names = set([ds.name for ds in split_files["train"]])
+    valid_names = set([ds.name for ds in split_files["valid"]])
+    test_names = set([ds.name for ds in split_files["test"]])
     assert len(train_names.intersection(valid_names)) == 0
     assert len(train_names.intersection(test_names)) == 0
     assert len(valid_names.intersection(test_names)) == 0
 
 
 def test_train_test_split_invalid_splits():
-    datasets = []
+    files = []
     for i in range(50):
-        ds = DummyDataset(name=f"/some/path/{i}.mid")
-        datasets.append(ds)
+        ds = Path(f"/some/path/{i}.mid")
+        files.append(ds)
     # these splits are invalid
     data_splits_list = [
         {"train": 0.7, "valid": 0.1, "test": 0.1},  # AssertionError
@@ -54,8 +55,8 @@ def test_train_test_split_invalid_splits():
     for data_splits in data_splits_list:
         with pytest.raises(AssertionError):
             train_test_split(
-                datasets=datasets,
-                splits=data_splits
+                files,
+                data_splits
             )
 
 # def test_gmd_dataset_constructor(path_to_data: Path, files: List[Path]):

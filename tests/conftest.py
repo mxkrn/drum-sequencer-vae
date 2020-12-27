@@ -8,11 +8,6 @@ from dsvae.data.loader import NoteSequenceDataLoader
 
 
 @pytest.fixture
-def logger():
-    return init_logger('test')
-
-
-@pytest.fixture
 def path_to_data() -> Path:
     return Path.cwd() / Path("tests/fixtures/gmd")
 

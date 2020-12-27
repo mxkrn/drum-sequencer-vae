@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 def reconstruction_loss(input, target, channels):
     onsets, velocities, offsets = torch.split(input, channels, dim=-1)
-    #target = torch.transpose(target, 0, 1).float()
+    # target = torch.transpose(target, 0, 1).float()
     target_onsets, target_velocities, target_offsets = torch.split(
         target, channels, dim=-1
     )

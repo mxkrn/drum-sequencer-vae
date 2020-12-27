@@ -18,11 +18,17 @@ from dsvae.utils import (
 )
 
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
+DEBUG = debug = bool(int(os.environ["_PYTEST_RAISE"]))
 
 
 def train(hparams: Dict[str, Union[str, int, float, bool]]):
     # ops
+    if DEBUG:
+        logger = init_logger(logging.DEBUG)
+    else:
+        logger = init_logger(logging.INFO)
+
     device = get_device(hparams)
     logger.info(f"Using device {device}")
     logger.info(f"Using hyperparameters: \n{hparams}")
@@ -36,17 +42,23 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
     # data
     loaders = dict()
     lengths = dict()
-    logger.info(f'Loading data from {os.environ["DATA_SOURCE_DIR"]}')
+    
+    path_to_data = Path(os.environ["DATA_SOURCE_DIR"])
+
+    logger.info(f'Loading data from {path_to_data}')
+
     for split in ["train", "valid", "test"]:
         loaders[split] = NoteSequenceDataLoader(
-            path_to_data=Path(os.environ["DATA_SOURCE_DIR"]),
+            path_to_data=path_to_data,
             batch_size=hparams.batch_size,
             split=split,
-            shuffle=True,
+            file_shuffle=hparams.file_shuffle,
+            pattern_shuffle=hparams.pattern_shuffle,
+            scale_factor=hparams.scale_factor,
             num_workers=hparams.num_workers,
         )
         lengths[split] = len([x for x in loaders[split]])
-    logger.info(f'Data loader is using {hparams.num_workers} worker threads')
+    logger.info(f"Data loader is using {hparams.num_workers} worker threads")
 
     # model
     model = VAE(hparams, loaders["train"].channels)
@@ -71,7 +83,6 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
         logger.info(f"Epoch {epoch}")
 
         # annealing
-        # TODO: Implement in VAE
         teacher_force_ratio = torch.tensor(
             1.0 * linear_anneal(epoch, hparams.max_anneal),
             dtype=torch.float,
@@ -146,7 +157,9 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
             save_path = f"{save_dir}/latest.pt"
 
             logger.info(f"Saving model snapshot to {save_path} with loss: {best_loss}")
-            torch.save(model.state_dict(), save_path)
+            debug = bool(int(os.environ["_PYTEST_RAISE"]))
+            if not debug:
+                torch.save(model.state_dict(), save_path)
         else:
             early_stop_count += 1
 
@@ -159,6 +172,5 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
 
 
 if __name__ == "__main__":
-    init_logger()
     hparams = get_hparams()
     train(hparams)

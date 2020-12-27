@@ -16,6 +16,7 @@ def init_logger(level: int = logging.INFO) -> logging.Logger:
         handler.setFormatter(format)
         handler.setLevel(level)
         logger.addHandler(handler)
+    return logger
 
 
 def init_seed(hparams):

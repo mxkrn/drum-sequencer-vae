@@ -1,6 +1,7 @@
 from functools import cached_property
 import logging
 import math
+import numpy as np
 from note_seq import sequences_lib, midi_io
 from note_seq.protobuf.music_pb2 import NoteSequence
 from pathlib import Path
@@ -9,7 +10,6 @@ from torch.utils.data import Dataset
 from typing import List, Tuple
 
 from dsvae.data.converter.groove import GrooveConverter
-from dsvae.utils.ops import init_logger
 
 
 def note_sequence_to_tensor(
@@ -43,10 +43,10 @@ class NoteSequenceDataset(Dataset):
         note_sequence: NoteSequence,
         filepath: Path,
         pitch_mapping: dict,
-        generations: int = 3,
+        pattern_shuffle: bool = True,
+        scale_factor: int = 1,
     ):
         super(NoteSequenceDataset, self).__init__()
-        self.logger = init_logger()
 
         self.filepath = filepath
         self.name = filepath.stem
@@ -55,23 +55,39 @@ class NoteSequenceDataset(Dataset):
         self.pitch_mapping = pitch_mapping
         self.channels = len(pitch_mapping)
 
+        self.pattern_shuffle = pattern_shuffle
+        self.scale_factor = scale_factor
+
+        if ((not self.pattern_shuffle) & (self.scale_factor > 1)):
+            logging.getLogger(__name__).warning(
+                "Scaling the dataset without shuffling is the same as duplicating the dataset - "
+                "forcing scale_factor to 1."
+            )
+            self.scale_factor = 1
+        elif self.scale_factor < 1:
+            logging.getLogger(__name__).warning(
+                "Scaling the dataset by less than 1 is not allowed - "
+                "forcing scale_factor to 1."
+            )
+            self.scale_factor = 1
+
         try:
             self.meter = note_sequence.meter
         except AttributeError:
             pass
 
-        self._meiosis(generations)
+        self._meiosis()
 
     @classmethod
-    def from_midi(cls, filepath: Path, pitch_mapping: dict):
+    def from_midi(cls, filepath: Path, pitch_mapping: dict, pattern_shuffle: bool, scale_factor: int):
         """
         Construct NoteSequence class directly from a MIDI file.
         """
         with open(filepath, "rb") as f:
             note_sequence = midi_io.midi_to_note_sequence(f.read())
-            return cls(note_sequence, filepath, pitch_mapping)
+            return cls(note_sequence, filepath, pitch_mapping, pattern_shuffle, scale_factor)
 
-    def _meiosis(self, generations):
+    def _meiosis(self):
         """We want to replicate using an evolutionary algorithm which uses
         all original 1-bar sequences as parents.
 
@@ -90,13 +106,17 @@ class NoteSequenceDataset(Dataset):
             targets = tensor.outputs[0].reshape(
                 (-1, self.sequence_length, self.channels * 3)
             )
+
             for i, input_frame in enumerate(inputs):
-                target_frame = targets[i]
-                sample = (
-                    torch.tensor(input_frame, dtype=torch.float),
-                    torch.tensor(target_frame, dtype=torch.float),
-                )
-                self.data.append(sample)
+                for gen in range(self.scale_factor):
+                    if self.pattern_shuffle:
+                        np.random.shuffle(targets)
+                    target_frame = targets[i]
+                    sample = (
+                        torch.tensor(input_frame, dtype=torch.float),
+                        torch.tensor(target_frame, dtype=torch.float),
+                    )
+                    self.data.append(sample)
 
     def __getitem__(self, idx):
         inputs, targets = self.data[idx]

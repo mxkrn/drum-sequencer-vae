@@ -13,7 +13,6 @@ class Mutation:
 
 
 class NoteDropout(nn.Module):
-
     def __init__(self, channels: int, sequence_length: int):
         super().__init__()
 

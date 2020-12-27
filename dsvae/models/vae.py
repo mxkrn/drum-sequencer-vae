@@ -8,7 +8,6 @@ from dsvae.models.utils import NoteDropout
 
 
 class VAE(nn.Module):
-
     def __init__(self, hparams: Dict[str, Union[int, float, str]], channels: int):
         super().__init__()
         self.input_size = hparams.input_size
@@ -41,7 +40,10 @@ class VAE(nn.Module):
         # self._apply(self._init_params)
 
     def forward(
-        self, input: torch.Tensor, delta_z: torch.Tensor, teacher_force_ratio: torch.Tensor
+        self,
+        input: torch.Tensor,
+        delta_z: torch.Tensor,
+        teacher_force_ratio: torch.Tensor,
     ) -> Tuple[torch.Tensor, float]:
         mu, logvar = self._encode(input)
 
