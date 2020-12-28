@@ -29,9 +29,8 @@ def process(hparams):
     )
     hparams["input_size"] = hparams.channels * 3
     hparams["input_shape"] = (hparams.sequence_length, hparams.input_size)
-    assert (
-        hparams.max_anneal <= hparams.epochs
-    ), "Max anneal value cannot be greater than max number of epochs"
+    if hparams.max_anneal > hparams.epochs:
+        hparams.max_anneal = hparams.epoch
     return hparams
 
 

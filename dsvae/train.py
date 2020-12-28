@@ -23,6 +23,13 @@ DEBUG = debug = bool(int(os.environ["_PYTEST_RAISE"]))
 
 
 def train(hparams: Dict[str, Union[str, int, float, bool]]):
+    # initialize monitoring
+    run = wandb.init(
+        dir="outputs",
+    )
+    for k, v in hparams.__dict__.items():
+        wandb.config[k] = v
+
     # ops
     if DEBUG:
         logger = init_logger(logging.DEBUG)
@@ -32,12 +39,6 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
     device = get_device(hparams)
     logger.info(f"Using device {device}")
     logger.info(f"Using hyperparameters: \n{hparams}")
-
-    run = wandb.init(
-        dir="outputs",
-    )
-    for k, v in hparams.__dict__.items():
-        wandb.config[k] = v
 
     # data
     loaders = dict()
@@ -104,7 +105,11 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
             # forward
             input = input.to(device, non_blocking=True)
             target = target.to(device, non_blocking=True)
-            output, z, z_loss = model(input, delta_z, teacher_force_ratio)
+            assert torch.any(torch.ne(input, target))
+
+            # TODO: Test input and target data loading
+            # TODO: Pass target into model as decoder target
+            output, z, z_loss = model(input, target, delta_z, teacher_force_ratio)
 
             # loss
             z_loss *= beta_factor  # scale the KL-divergence

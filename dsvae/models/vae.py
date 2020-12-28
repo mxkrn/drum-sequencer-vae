@@ -42,6 +42,7 @@ class VAE(nn.Module):
     def forward(
         self,
         input: torch.Tensor,
+        target: torch.Tensor,
         delta_z: torch.Tensor,
         teacher_force_ratio: torch.Tensor,
     ) -> Tuple[torch.Tensor, float]:
@@ -50,7 +51,7 @@ class VAE(nn.Module):
         z, z_loss = self._reparameterize(mu, logvar)
         z = torch.add(z, delta_z.to(z.device))  # Z-manipulation
 
-        output, z = self._decode(z, input, teacher_force_ratio)
+        output, z = self._decode(z, target, teacher_force_ratio)
         output = self._activation(output, self.channels)
 
         return output, z, z_loss
@@ -72,7 +73,7 @@ class VAE(nn.Module):
         return z, z_loss
 
     def _decode(
-        self, z: torch.Tensor, input: torch.Tensor, teacher_force_ratio: torch.Tensor
+        self, z: torch.Tensor, target: torch.Tensor, teacher_force_ratio: torch.Tensor
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         # get hidden representation
         hidden = self.from_latent(z)
@@ -80,8 +81,8 @@ class VAE(nn.Module):
         gate, cell = torch.split(hidden, self.hidden_size, -1)
 
         # TODO: Apply note dropout (teacher forcing)
-        input = self.note_dropout(input, teacher_force_ratio)
-        output = self.decoder(input, gate, cell)
+        target = self.note_dropout(target, teacher_force_ratio)
+        output = self.decoder(target, gate, cell)
         return output, z
 
     def _activation(self, output: torch.Tensor, channels: int) -> torch.Tensor:
