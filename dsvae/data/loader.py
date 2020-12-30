@@ -77,7 +77,12 @@ class NoteSequenceDataLoader:
         for midi_file in self.split_files[self.split]:
             if midi_file in self.invalid_files:
                 continue
-            ds = NoteSequenceDataset.from_midi(midi_file, self.pitch_mapping["pitches"], self.pattern_shuffle, self.scale_factor)
+            ds = NoteSequenceDataset.from_midi(
+                midi_file,
+                self.pitch_mapping["pitches"],
+                self.pattern_shuffle,
+                self.scale_factor,
+            )
             if self.channels is None:
                 self.channels = ds.channels
             if self.sequence_length is None:
@@ -154,10 +159,7 @@ def train_test_split(
             #     dataset_indices[:split_length],
             #     dataset_indices[split_length:],
             # )
-            split_files, files = (
-                files[:split_length],
-                files[split_length:]
-            )
+            split_files, files = (files[:split_length], files[split_length:])
         else:  # take remainder
             # split_indices = dataset_indices
             split_files = files

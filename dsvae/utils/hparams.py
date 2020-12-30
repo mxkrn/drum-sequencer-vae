@@ -30,7 +30,7 @@ def process(hparams):
     hparams["input_size"] = hparams.channels * 3
     hparams["input_shape"] = (hparams.sequence_length, hparams.input_size)
     if hparams.max_anneal > hparams.epochs:
-        hparams.max_anneal = hparams.epoch
+        hparams.max_anneal = hparams.epochs
     return hparams
 
 
@@ -43,12 +43,12 @@ def get_hparams(**kwargs) -> Dict[str, Any]:
         sequence_length=16,
         file_shuffle=True,  # shuffles data loading across different MIDI patterns
         pattern_shuffle=True,  # shuffle sub-patterns within a MIDI pattern
-        scale_factor=2,
+        scale_factor=10,
         model="vae",
         bidirectional=False,
         n_layers=2,
         hidden_size=512,
-        latent_size=32,
+        latent_size=8,
         lstm_dropout=0.1,
         # teacher_force_ratio=0.0,
         beta=1e4,
@@ -57,7 +57,7 @@ def get_hparams(**kwargs) -> Dict[str, Any]:
         disentangle=False,
         epochs=250,
         lr=1e-4,
-        warm_latent=5,
+        warm_latent=50,
         early_stop=30,
         device="",
     )

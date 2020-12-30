@@ -17,8 +17,8 @@ def test_sequence_handler_properties(files, pitch_mapping):
         assert dataset.bars_per_frame == 1
         assert dataset.qpm > 0
         assert type(dataset.qpm) == float
-        assert dataset.qpm == 120
-        assert dataset.seconds_per_bar == 2.0
+        assert round(dataset.qpm) in [120, 152]
+        assert round(dataset.seconds_per_bar, 2) in [2.00, 1.58]
 
 
 def test_monophonic_1bar(files, pitch_mapping):
@@ -119,7 +119,7 @@ def test_sequence_to_tensor(files, pitch_mapping):
 
 
 def test_dataset_pattern_scale(files, pitch_mapping):
-    for scale_factor in [2, 4]:
+    for scale_factor in [2, 4, 30]:
         for midi_file in files:
             file_hash = midi_file.stem.split("-")
             length_in_bars = file_hash[-1]
@@ -130,7 +130,11 @@ def test_dataset_pattern_scale(files, pitch_mapping):
                 assert dataset.duration_bars <= 2
                 assert dataset.duration_bars > 1.8
                 assert dataset.frame_lengths == [0.0, 2.0, 4.0]
-                assert len(dataset.data) == 2*scale_factor
+
+                if scale_factor >= int(length_in_bars):
+                    assert len(dataset.data) == 2*dataset.duration_bars
+                else:
+                    assert len(dataset.data) == 2*scale_factor
 
             if length_in_bars == str(1.5):
                 dataset = NoteSequenceDataset.from_midi(
@@ -144,3 +148,37 @@ def test_dataset_pattern_scale(files, pitch_mapping):
 
                 for tensor_tuple in dataset.data:
                     assert torch.all(torch.eq(tensor_tuple[0][:, :9], tensor_tuple[1][:, :9]))
+
+
+def test_long_pattern(files, pitch_mapping):
+    for scale_factor in [4, 10, 30]:
+        for midi_file in files:
+            file_hash = midi_file.stem.split("-")
+            length_in_bars = file_hash[-1]
+            if float(length_in_bars) > 3:
+                dataset = NoteSequenceDataset.from_midi(
+                    midi_file, pitch_mapping["pitches"], True, scale_factor
+                )
+                assert dataset.duration_bars == int(length_in_bars)
+                assert len(dataset.data) == dataset.duration_bars*dataset.scale_factor
+
+                not_equal_count = 0
+                for sample in dataset.data:
+                    # check that input and target onsets are not 100% equal
+                    if torch.any(torch.ne(sample[0][:, :9], sample[1][:, :9])):
+                        not_equal_count += 1
+                assert not_equal_count > 0, "Something went wrong, all input and target patterns in this shuffled sample are equal"
+
+            if float(length_in_bars) > 3:
+                dataset = NoteSequenceDataset.from_midi(
+                    midi_file, pitch_mapping["pitches"], False, scale_factor
+                )
+                assert dataset.duration_bars == int(length_in_bars)
+                assert len(dataset.data) == dataset.duration_bars*dataset.scale_factor
+
+                not_equal_count = 0
+                for sample in dataset.data:
+                    # check that input and target onsets are not 100% equal
+                    if torch.any(torch.ne(sample[0][:, :9], sample[1][:, :9])):
+                        not_equal_count += 1
+                assert not_equal_count == 0, "Something went wrong, all input and target patterns in this sample should be equal"

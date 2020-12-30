@@ -56,59 +56,62 @@ class NoteSequenceDataset(Dataset):
         self.channels = len(pitch_mapping)
 
         self.pattern_shuffle = pattern_shuffle
-        self.scale_factor = scale_factor
-
-        if ((not self.pattern_shuffle) & (self.scale_factor > 1)):
-            logging.getLogger(__name__).warning(
-                "Scaling the dataset without shuffling is the same as duplicating the dataset - "
-                "forcing scale_factor to 1."
-            )
-            self.scale_factor = 1
-        elif self.scale_factor < 1:
-            logging.getLogger(__name__).warning(
-                "Scaling the dataset by less than 1 is not allowed - "
-                "forcing scale_factor to 1."
-            )
-            self.scale_factor = 1
+        self.scale_factor = self.set_scale_factor(scale_factor)
 
         try:
             self.meter = note_sequence.meter
         except AttributeError:
             pass
 
-        self._meiosis()
+        self._build()
 
     @classmethod
-    def from_midi(cls, filepath: Path, pitch_mapping: dict, pattern_shuffle: bool, scale_factor: int):
+    def from_midi(
+        cls,
+        filepath: Path,
+        pitch_mapping: dict,
+        pattern_shuffle: bool,
+        scale_factor: int,
+    ):
         """
-        Construct NoteSequence class directly from a MIDI file.
+        Construct NoteSequence instance directly from a MIDI file.
         """
         with open(filepath, "rb") as f:
             note_sequence = midi_io.midi_to_note_sequence(f.read())
-            return cls(note_sequence, filepath, pitch_mapping, pattern_shuffle, scale_factor)
+            return cls(
+                note_sequence, filepath, pitch_mapping, pattern_shuffle, scale_factor
+            )
 
-    def _meiosis(self):
-        """We want to replicate using an evolutionary algorithm which uses
-        all original 1-bar sequences as parents.
-
-        *WARNING* In some cultures this could be considered incestuous.
+    def _build(self):
+        """This build step applies formatting and enhancement to
+        the loaded NoteSequence instance.
+        - NoteSequence objects are converted to ConverterTensor objects (ct), ct
+        are defined in data/converters/base
+        - input and target sequences are split into 1-bar frames and shuffled. This
+        means on every iteration, the input could be compared to any other 1-bar sequence
+        in the pattern.
+        - Finally, the scale factor determines how many permutations within each
+        pattern are done, this effectively scales the dataset by scale_factor
         """
         self.data = []
-        tensor = note_sequence_to_tensor(self.base_note_sequence, self.pitch_mapping)
+        ct = note_sequence_to_tensor(self.base_note_sequence, self.pitch_mapping)
 
-        if len(tensor.inputs) == 0:
+        if len(ct.inputs) == 0:
             logging.getLogger(__name__).warning(f"Failed loading {self.filepath}")
             pass
         else:
-            inputs = tensor.inputs[0].reshape(
+            # split into 1-bar frames
+            inputs = ct.inputs[0].reshape((-1, self.sequence_length, self.channels * 3))
+            targets = ct.outputs[0].reshape(
                 (-1, self.sequence_length, self.channels * 3)
             )
-            targets = tensor.outputs[0].reshape(
-                (-1, self.sequence_length, self.channels * 3)
-            )
-
+            if self.pattern_shuffle:
+                np.random.shuffle(targets)
             for i, input_frame in enumerate(inputs):
-                for gen in range(self.scale_factor):
+                for _ in range(self.scale_factor):
+                    # we are basically pairing the input frame
+                    # with N=scale_factor number of randomized target
+                    # frames from the same sequence
                     if self.pattern_shuffle:
                         np.random.shuffle(targets)
                     target_frame = targets[i]
@@ -117,6 +120,28 @@ class NoteSequenceDataset(Dataset):
                         torch.tensor(target_frame, dtype=torch.float),
                     )
                     self.data.append(sample)
+
+    def set_scale_factor(self, scale_factor: float) -> float:
+        """Performs some checks that scale factor avoid unnecessary duplication."""
+        if (not self.pattern_shuffle) & (scale_factor > 1):
+            logging.getLogger(__name__).warning(
+                "Scaling the dataset without shuffling is the same as duplicating the dataset - "
+                "forcing scale_factor to 1."
+            )
+            scale_factor = 1
+        elif scale_factor < 1:
+            logging.getLogger(__name__).warning(
+                "Scaling the dataset by less than 1 is not allowed - "
+                "forcing scale_factor to 1."
+            )
+            scale_factor = 1
+        if scale_factor > self.duration_bars:
+            scale_factor = self.duration_bars
+            logging.getLogger(__name__).warning(
+                "Scale factor is greater than number of bars in pattern,"
+                "setting scale_factor to number of bars"
+            )
+        return scale_factor
 
     def __getitem__(self, idx):
         inputs, targets = self.data[idx]
