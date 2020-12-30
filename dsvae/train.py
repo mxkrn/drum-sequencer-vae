@@ -161,28 +161,29 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
         logger.info(f"r_loss: {r_losses} | z_loss: {z_losses}")
 
         # best model
-        if (loss_dict["test"] < best_loss) & (epoch >= hparams.max_anneal - 1):
-            training_step = 0
-            best_loss = loss_dict["test"]
+        if epoch >= hparams.max_anneal - 1:
+            if (loss_dict["test"] < best_loss):
+                early_stop_count = 0
+                # save
+                best_loss = loss_dict["test"]
+                save_dir = Path(f"outputs/models/{run.name}")
+                if not save_dir.is_dir():
+                    os.mkdir(save_dir)
+                save_path = f"{save_dir}/latest.pt"
 
-            save_dir = Path(f"outputs/models/{run.name}")
-            if not save_dir.is_dir():
-                os.mkdir(save_dir)
-            save_path = f"{save_dir}/latest.pt"
-
-            if DEBUG:
-                logger.warning("Model will not be saved in debug mode to save disk space.")
+                if DEBUG:
+                    logger.warning("Model will not be saved in debug mode to save disk space.")
+                else:
+                    logger.info(f"Saving model snapshot to {save_path} with loss: {best_loss}")
+                    torch.save(model.state_dict(), save_path)
             else:
-                logger.info(f"Saving model snapshot to {save_path} with loss: {best_loss}")
-                torch.save(model.state_dict(), save_path)
-        else:
-            early_stop_count += 1
+                early_stop_count += 1
 
-        # early stopping
-        if early_stop_count >= hparams.early_stop:
-            logger.info(f"Best loss: {best_loss}; model location: {save_path}")
-            logger.info(f"Reached early stopping threshold of {training_step} epochs.")
-            break
+            # early stopping
+            if (early_stop_count >= hparams.early_stop):
+                logger.info(f"Best loss: {best_loss}; model location: {save_path}")
+                logger.info(f"Reached early stopping threshold of {training_step} epochs.")
+                break
     logger.info("Reached maximum number of epochs")
 
 
