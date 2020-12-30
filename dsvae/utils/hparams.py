@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import logging
 import os
 from typing import Dict, Any
 
@@ -31,6 +32,10 @@ def process(hparams):
     hparams["input_shape"] = (hparams.sequence_length, hparams.input_size)
     if hparams.max_anneal > hparams.epochs:
         hparams.max_anneal = hparams.epochs
+        logging.getLogger(__name__).warning("max_anneal is greater than epochs - forcing max_anneal=epochs")
+    if hparams.warm_latent > hparams.epochs:
+        hparams.warm_latent = hparams.epochs
+        logging.getLogger(__name__).warning("warm_latent is greater than epochs - forcing warm_latent =epochs")
     return hparams
 
 
@@ -52,12 +57,12 @@ def get_hparams(**kwargs) -> Dict[str, Any]:
         lstm_dropout=0.1,
         # teacher_force_ratio=0.0,
         beta=1e4,
-        max_anneal=100,
+        max_anneal=200,
         attention=False,
         disentangle=False,
-        epochs=250,
+        epochs=300,
         lr=1e-4,
-        warm_latent=50,
+        warm_latent=100,
         early_stop=30,
         device="",
     )

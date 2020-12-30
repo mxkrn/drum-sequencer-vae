@@ -22,21 +22,7 @@ from dsvae.utils import (
 DEBUG = bool(int(os.environ["_PYTEST_RAISE"]))
 
 
-def train(hparams: Dict[str, Union[str, int, float, bool]]):
-    # initialize monitoring
-    run = wandb.init(
-        dir="outputs",
-    )
-    for k, v in hparams.__dict__.items():
-        wandb.config[k] = v
-
-    # ops
-    if DEBUG:
-        logger = init_logger(logging.DEBUG)
-        logger.debug("Running train.py in debug mode")
-    else:
-        logger = init_logger(logging.INFO)
-
+def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logger):
     device = get_device(hparams)
     logger.info(f"Using device {device}")
     logger.info(f"Using hyperparameters: \n{hparams}")
@@ -94,7 +80,7 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
 
         # for the beta_factor we need an inverse anneal
         beta_factor = torch.tensor(
-            hparams.beta * (1 + 1e-6 - linear_anneal(epoch, hparams.max_anneal)),
+            hparams.beta * (1 + 1e-6 - linear_anneal(epoch, hparams.warm_latent)),
             dtype=torch.float,
             device=device,
         )
@@ -152,13 +138,18 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
 
         scheduler.step(loss_dict["valid"])
 
-        # monitoring
+        # monitoring and logging
         # TODO: Add more evaluation metrics
+        monitor_dict = dict()
         for k, v in loss_dict.items():
             k = f"{k}_loss"
-            wandb.log({k: v})
-        wandb.log({"r_loss": r_losses, "z_loss": z_losses})
-        logger.info(f"r_loss: {r_losses} | z_loss: {z_losses}")
+            monitor_dict[k] = v
+        monitor_dict["r_loss_avg"] = r_losses
+        monitor_dict["z_loss_avg"] = z_losses
+
+        wandb.log(monitor_dict)
+        for k, v in monitor_dict.items():
+            logger.info(f"{k}: {v}")
 
         # best model
         if epoch >= hparams.max_anneal - 1:
@@ -172,7 +163,7 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
                 save_path = f"{save_dir}/latest.pt"
 
                 if DEBUG:
-                    logger.warning("Model will not be saved in debug mode to save disk space.")
+                    logger.warning("Model will not be saved in debug mode")
                 else:
                     logger.info(f"Saving model snapshot to {save_path} with loss: {best_loss}")
                     torch.save(model.state_dict(), save_path)
@@ -188,5 +179,22 @@ def train(hparams: Dict[str, Union[str, int, float, bool]]):
 
 
 if __name__ == "__main__":
+    # initialize monitoring
+    run = wandb.init(
+        dir="outputs",
+    )
+
+    # ops
+    if DEBUG:
+        logger = init_logger(logging.DEBUG)
+        logger.debug("Running train.py in debug mode")
+    else:
+        logger = init_logger(logging.INFO)
+
+    # get hparams and add to config
     hparams = get_hparams()
-    train(hparams)
+    for k, v in hparams.__dict__.items():
+        wandb.config[k] = v
+
+    # run
+    train(hparams, logger)
