@@ -31,4 +31,4 @@ class LSTMEncoder(nn.Module):
         output, (gate, cell) = self.lstm(input)
         gate = gate.view(input.shape[0], self.hidden_factor * self.hidden_size)
         cell = cell.view(input.shape[0], self.hidden_factor * self.hidden_size)
-        return (gate, cell), output
+        return (gate, cell)

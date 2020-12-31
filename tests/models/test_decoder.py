@@ -5,8 +5,12 @@ import torch
 
 
 def test_lstm_decoder(sample, hparams, channels):
-    # default - bidirectional - 2 layers
+    # bidirectional - 2 layers
+    hparams.bidirectional = True
+    hparams.n_layers = 2
+    hparams.hidden_factor = 4
     hparams.input_size = channels*3
+    
     gate = torch.zeros([hparams.hidden_factor, sample[0].shape[0], hparams.hidden_size])
     cell = gate.clone()
 

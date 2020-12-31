@@ -30,17 +30,6 @@ def init_seed(hparams):
         torch.backends.cudnn.benchmark = False
 
 
-# def load_path() -> Path:
-#     try:
-#         path = Path(os.environ["PATH_TO_DATA"])
-#         return path
-#     except KeyError:
-#         raise EnvironmentError(
-#             "Please set to PATH_TO_DATA as an environtment variable"
-#             "pointing to your data directory."
-#         )
-
-
 def get_device(hparams):
     if hparams.device == "cpu":
         device = torch.device("cpu")

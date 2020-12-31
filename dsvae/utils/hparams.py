@@ -48,7 +48,7 @@ def get_hparams(**kwargs) -> Dict[str, Any]:
         sequence_length=16,
         file_shuffle=True,  # shuffles data loading across different MIDI patterns
         pattern_shuffle=True,  # shuffle sub-patterns within a MIDI pattern
-        scale_factor=10,
+        scale_factor=2,
         model="vae",
         bidirectional=False,
         n_layers=2,

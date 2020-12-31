@@ -22,6 +22,8 @@ class VAE(nn.Module):
     def _build(self, hparams: Dict[str, Union[int, float, str]]) -> None:
         self.encoder = LSTMEncoder(hparams)
 
+        # self.mu = nn.Linear(self.hidden_size * 2, self.latent_size)
+        # self.logvar = nn.Linear(self.hidden_size * 2, self.latent_size)
         self.mu = nn.Linear(self.hidden_factor * self.hidden_size * 2, self.latent_size)
         self.logvar = nn.Linear(
             self.hidden_factor * self.hidden_size * 2, self.latent_size
@@ -56,7 +58,7 @@ class VAE(nn.Module):
         return output, z, z_loss
 
     def _encode(self, input: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        (gate, cell), _ = self.encoder(input)
+        (gate, cell) = self.encoder(input)
         h = torch.cat((gate, cell), -1)  # concatenate gate and cell
 
         mu = self.mu(h)
@@ -64,11 +66,14 @@ class VAE(nn.Module):
         return mu, logvar
 
     def _reparameterize(self, mu, logvar) -> Tuple[torch.Tensor, torch.Tensor]:
+        # Reparameterize from normal distribution
         eps = torch.randn_like(mu).detach().to(mu.device)
         z = (logvar.exp().sqrt() * eps) + mu
+
+        # KL-divergence
         z_loss = (-0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())) / mu.size(
             0
-        )  # KL-divergence
+        )
         return z, z_loss
 
     def _decode(

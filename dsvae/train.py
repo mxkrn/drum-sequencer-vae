@@ -46,6 +46,7 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
             num_workers=hparams.num_workers,
         )
         lengths[split] = len([x for x in loaders[split]])
+    logger.info(f"Batches per split: {lengths}")
     logger.info(f"Data loader is using {hparams.num_workers} worker threads")
 
     # model
@@ -182,6 +183,7 @@ if __name__ == "__main__":
     # initialize monitoring
     run = wandb.init(
         dir="outputs",
+        # allow_val_change=True
     )
 
     # ops
@@ -193,8 +195,10 @@ if __name__ == "__main__":
 
     # get hparams and add to config
     hparams = get_hparams()
-    for k, v in hparams.__dict__.items():
-        wandb.config[k] = v
+    # for k, v in hparams.__dict__.items():
+    #     wandb.config[k] = v
+    wandb.config.update(hparams, allow_val_change=True)
 
     # run
+    # hparams = wandb.config
     train(hparams, logger)
