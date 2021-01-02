@@ -5,12 +5,12 @@ import torch
 import torch.nn.functional as F
 from typing import Dict, Union
 import wandb
+import yaml
 
 from dsvae.data.loader import NoteSequenceDataLoader
 from dsvae.models.vae import VAE
 from dsvae.utils import (
     get_device,
-    get_hparams,
     init_seed,
     init_logger,
     linear_anneal,
@@ -18,22 +18,30 @@ from dsvae.utils import (
 )
 
 
-# logger = logging.getLogger(__name__)
-DEBUG = bool(int(os.environ["_PYTEST_RAISE"]))
+def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logger):
+    
+    save_dir = Path(f"outputs/models/{run_name}")
+    if not save_dir.is_dir():
+        os.mkdir(save_dir)
 
-
-def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logger):
     device = get_device(hparams)
     logger.info(f"Using device {device}")
-    logger.info(f"Using hyperparameters: \n{hparams}")
+    logger.info(f"hyperparameters: \n{hparams}")
 
     # data
     loaders = dict()
-    lengths = dict()
+    num_batches = dict()
 
     path_to_data = Path(os.environ["DATA_SOURCE_DIR"])
-
-    logger.info(f"Loading data from {path_to_data}")
+    if bool(int(os.environ["DEBUG"])):
+        logger.info('DEBUG')
+        path_to_data = Path(os.environ["DATA_SOURCE_DIR"]) / 'test'
+    else:
+        path_to_data = Path(os.environ["DATA_SOURCE_DIR"]) / 'full'
+    if path_to_data.is_dir():
+        logger.info(f"Loading data from {path_to_data}")
+    else:
+        f"Invalid path to data {path_to_data}"
 
     for split in ["train", "valid", "test"]:
         loaders[split] = NoteSequenceDataLoader(
@@ -45,8 +53,8 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
             scale_factor=hparams.scale_factor,
             num_workers=hparams.num_workers,
         )
-        lengths[split] = len([x for x in loaders[split]])
-    logger.info(f"Batches per split: {lengths}")
+        num_batches[split] = len([x for x in loaders[split]])
+    logger.info(f"Batches per split: {num_batches}")
     logger.info(f"Data loader is using {hparams.num_workers} worker threads")
 
     # model
@@ -133,9 +141,9 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
 
         # normalize losses
         for split, loss in loss_dict.items():
-            loss_dict.update({split: loss / lengths[split]})
-        r_losses /= sum(lengths.values())
-        z_losses /= sum(lengths.values())
+            loss_dict.update({split: loss / num_batches[split]})
+        r_losses /= sum(num_batches.values())
+        z_losses /= sum(num_batches.values())
 
         scheduler.step(loss_dict["valid"])
 
@@ -158,47 +166,26 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
                 early_stop_count = 0
                 # save
                 best_loss = loss_dict["test"]
-                save_dir = Path(f"outputs/models/{run.name}")
-                if not save_dir.is_dir():
-                    os.mkdir(save_dir)
-                save_path = f"{save_dir}/latest.pt"
 
-                if DEBUG:
-                    logger.warning("Model will not be saved in debug mode")
+                if bool(int(os.environ["DEBUG"])):
+                    logger.warning("Model will not be saved in DEBUG mode")
                 else:
-                    logger.info(f"Saving model snapshot to {save_path} with loss: {best_loss}")
-                    torch.save(model.state_dict(), save_path)
+                    logger.info(f"Saving model snapshot to {save_dir}/latest.pt with loss: {best_loss}")
+                    torch.save(model.state_dict(), f"{save_dir}/latest.pt")
             else:
                 early_stop_count += 1
 
             # early stopping
             if (early_stop_count >= hparams.early_stop):
-                logger.info(f"Best loss: {best_loss}; model location: {save_path}")
-                logger.info(f"Reached early stopping threshold of {training_step} epochs.")
+                logger.info(f"Best loss: {best_loss}; model location: {save_dir}/latest.pt")
+                # wandb.save('../outputs/models/latest.pt')
+                logger.info(f"Reached early stopping threshold of {hparams.early_stop} epochs.")
+                wandb.save(f"{save_dir}/latest.pt")
                 break
+    wandb.save(f"{save_dir}/latest.pt")
+    wandb.save(f"{save_dir}/config.yml")
     logger.info("Reached maximum number of epochs")
 
 
-if __name__ == "__main__":
-    # initialize monitoring
-    run = wandb.init(
-        dir="outputs",
-        # allow_val_change=True
-    )
-
-    # ops
-    if DEBUG:
-        logger = init_logger(logging.DEBUG)
-        logger.debug("Running train.py in debug mode")
-    else:
-        logger = init_logger(logging.INFO)
-
-    # get hparams and add to config
-    hparams = get_hparams()
-    # for k, v in hparams.__dict__.items():
-    #     wandb.config[k] = v
-    wandb.config.update(hparams, allow_val_change=True)
-
-    # run
-    # hparams = wandb.config
-    train(hparams, logger)
+def resume(run_name, logger):
+    raise NotImplementedError

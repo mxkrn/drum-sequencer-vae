@@ -1,0 +1,28 @@
+# data
+dataset: "gmd"
+num_workers: 0
+batch_size: 4  # input_tensor.shape[0]
+input_size: 27  # input_tensor.shape[-1]
+sequence_length: 16  # input_tensor.shape[1]
+file_shuffle: True  # shuffles data loading across different MIDI patterns
+pattern_shuffle: True  # shuffle sub-patterns within a MIDI pattern
+scale_factor: 2
+# model
+model_type: "vae"
+encoder: "lstm"
+decoder: "lstm"
+n_layers: 2
+hidden_size: 128
+latent_size: 4
+bidirectional: False
+attention: False
+disentangle: False
+lstm_dropout: 0.2
+# optimization
+beta: 10000
+max_anneal: 2
+warm_latent: 1
+epochs: 3
+lr: 0.0001
+early_stop: 3
+device: ""
