@@ -87,12 +87,19 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
         )
         logger.info(f"Teacher forcing ratio is {teacher_force_ratio}")
 
-        # for the beta_factor we need an inverse anneal
-        beta_factor = torch.tensor(
-            hparams.beta * (1 + 1e-3 - linear_anneal(epoch, hparams.warm_latent)),
-            dtype=torch.float,
-            device=device,
-        )
+        # beta_factor we need an inverse anneal
+        # we also force beta_factor to equal 1 in the first three epochs 
+        beta_threshold = 1e-3
+        if epoch < 3:
+            beta_factor = torch.tensor(
+                1, dtype=torch.float, device=device
+            )
+        else:
+            beta_factor = torch.tensor(
+                hparams.beta * (1 - linear_anneal(epoch, hparams.warm_latent)),
+                dtype=torch.float,
+                device=device,
+            )
         logger.info(f"Beta factor (KL-divergence weight) is {beta_factor}")
 
         # initialize losses
