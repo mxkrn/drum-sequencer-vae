@@ -1,2 +1,2 @@
-def evaluate(hparams, logger):
+def evaluate():
     raise NotImplementedError

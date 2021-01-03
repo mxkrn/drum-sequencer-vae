@@ -81,7 +81,7 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
 
         # annealing
         teacher_force_ratio = torch.tensor(
-            1.0 * linear_anneal(epoch, hparams.max_anneal),
+            0.8 * linear_anneal(epoch, hparams.max_anneal) + 0.2,
             dtype=torch.float,
             device=device,
         )
@@ -89,7 +89,7 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
 
         # for the beta_factor we need an inverse anneal
         beta_factor = torch.tensor(
-            hparams.beta * (1 + 1e-6 - linear_anneal(epoch, hparams.warm_latent)),
+            hparams.beta * (1 + 1e-3 - linear_anneal(epoch, hparams.warm_latent)),
             dtype=torch.float,
             device=device,
         )
