@@ -38,7 +38,7 @@ def hparams():
 def sample(path_to_data):
     batch_size = 2
     loader = NoteSequenceDataLoader(path_to_data, batch_size, "train")
-    batch =  next(iter(loader))
+    batch = next(iter(loader))
     return batch
 
 

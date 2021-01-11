@@ -132,9 +132,9 @@ def test_dataset_pattern_scale(files, pitch_mapping):
                 assert dataset.frame_lengths == [0.0, 2.0, 4.0]
 
                 if scale_factor >= int(length_in_bars):
-                    assert len(dataset.data) == 2*dataset.duration_bars
+                    assert len(dataset.data) == 2 * dataset.duration_bars
                 else:
-                    assert len(dataset.data) == 2*scale_factor
+                    assert len(dataset.data) == 2 * scale_factor
 
             if length_in_bars == str(1.5):
                 dataset = NoteSequenceDataset.from_midi(
@@ -144,10 +144,12 @@ def test_dataset_pattern_scale(files, pitch_mapping):
                 assert len(dataset.base_note_sequence.notes) == 6
                 assert round(dataset.duration_seconds, 5) == 2.55208
 
-                assert len(dataset.data) == 2*1
+                assert len(dataset.data) == 2 * 1
 
                 for tensor_tuple in dataset.data:
-                    assert torch.all(torch.eq(tensor_tuple[0][:, :9], tensor_tuple[1][:, :9]))
+                    assert torch.all(
+                        torch.eq(tensor_tuple[0][:, :9], tensor_tuple[1][:, :9])
+                    )
 
 
 def test_long_pattern(files, pitch_mapping):
@@ -160,25 +162,29 @@ def test_long_pattern(files, pitch_mapping):
                     midi_file, pitch_mapping["pitches"], True, scale_factor
                 )
                 assert dataset.duration_bars == int(length_in_bars)
-                assert len(dataset.data) == dataset.duration_bars*dataset.scale_factor
+                assert len(dataset.data) == dataset.duration_bars * dataset.scale_factor
 
                 not_equal_count = 0
                 for sample in dataset.data:
                     # check that input and target onsets are not 100% equal
                     if torch.any(torch.ne(sample[0][:, :9], sample[1][:, :9])):
                         not_equal_count += 1
-                assert not_equal_count > 0, "Something went wrong, all input and target patterns in this shuffled sample are equal"
+                assert (
+                    not_equal_count > 0
+                ), "Something went wrong, all input and target patterns in this shuffled sample are equal"
 
             if float(length_in_bars) > 3:
                 dataset = NoteSequenceDataset.from_midi(
                     midi_file, pitch_mapping["pitches"], False, scale_factor
                 )
                 assert dataset.duration_bars == int(length_in_bars)
-                assert len(dataset.data) == dataset.duration_bars*dataset.scale_factor
+                assert len(dataset.data) == dataset.duration_bars * dataset.scale_factor
 
                 not_equal_count = 0
                 for sample in dataset.data:
                     # check that input and target onsets are not 100% equal
                     if torch.any(torch.ne(sample[0][:, :9], sample[1][:, :9])):
                         not_equal_count += 1
-                assert not_equal_count == 0, "Something went wrong, all input and target patterns in this sample should be equal"
+                assert (
+                    not_equal_count == 0
+                ), "Something went wrong, all input and target patterns in this sample should be equal"

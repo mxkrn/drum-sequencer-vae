@@ -11,12 +11,13 @@ dependencies:
   - pytest>=6.0
   - flake8
   - rope
+  - onnx
   - pip
 
   - pip:
     - note_seq
-    - onnx
     - onnxruntime
     - wandb
     - google-api-python-client
+    - pre-commit
     - -e .

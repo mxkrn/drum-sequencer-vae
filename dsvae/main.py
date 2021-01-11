@@ -10,12 +10,11 @@ from dsvae.evaluate import evaluate
 
 
 class Client:
-
     def __init__(self, run_name: str = None, debug: bool = False):
-        
+
         self.debug = debug
         if debug:
-            os.environ['WANDB_MODE'] = 'dryrun'
+            os.environ["WANDB_MODE"] = "dryrun"
         if run_name is None:
             self.run = wandb.init(dir="outputs")
         else:
@@ -55,7 +54,7 @@ class Client:
 
     def resume(self):
         raise NotImplementedError
-    
+
     def evaluate(self, run_name):
         return evaluate(self.name, self.logger)
 
@@ -66,18 +65,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--train", default=True, action="store_true", help="Start a training run"
     )
-    parser.add_argument(
-        "--resume", action="store_true", help="resume a training run"
-    )
+    parser.add_argument("--resume", action="store_true", help="resume a training run")
     parser.add_argument(
         "--evaluate", action="store_true", help="Evaluate a training run"
     )
     parser.add_argument(
-        "--run_name", default=None, type=str, help="Name of training run if restoring or evaluating"
+        "--run_name",
+        default=None,
+        type=str,
+        help="Name of training run if restoring or evaluating",
     )
-    parser.add_argument(
-        "--debug", action="store_true", help="Run client in debug mode"
-    )
+    parser.add_argument("--debug", action="store_true", help="Run client in debug mode")
     args = parser.parse_args()
 
     client = Client(debug=args.debug)

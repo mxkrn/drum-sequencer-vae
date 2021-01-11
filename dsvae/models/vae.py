@@ -8,14 +8,17 @@ from dsvae.models.utils import NoteDropout
 
 
 class VAE(nn.Module):
-    def __init__(self, hparams: Dict[str, Union[int, float, str]], channels: int):
+    def __init__(self, hparams: Dict[str, Union[int, float, str]]):
         super().__init__()
         self.input_size = hparams.input_size
         self.latent_size = hparams.latent_size
         self.hidden_size = hparams.hidden_size
         self.hidden_factor = hparams.hidden_factor
         self.n_layers = hparams.n_layers
-        self.channels = channels
+        self.channels = hparams.input_size // 3  # onsets, velocities, and offsets
+        self.input_size = hparams.input_size
+        self.sequence_length = hparams.sequence_length
+        self.batch_size = hparams.batch_size
 
         self._build(hparams)
 
@@ -53,9 +56,10 @@ class VAE(nn.Module):
         z = torch.add(z, delta_z.to(z.device))  # Z-manipulation
 
         output, z = self._decode(z, input, teacher_force_ratio)
-        output = self._activation(output, self.channels)
+        onsets, velocities, offsets = self._activation(output, self.channels)
 
-        return output, z, z_loss
+        # TODO: Output as onsets, velocities, offsets
+        return onsets, velocities, offsets, z, z_loss
 
     def _encode(self, input: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         (gate, cell) = self.encoder(input)
@@ -71,9 +75,7 @@ class VAE(nn.Module):
         z = (logvar.exp().sqrt() * eps) + mu
 
         # KL-divergence
-        z_loss = (-0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())) / mu.size(
-            0
-        )
+        z_loss = (-0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())) / mu.size(0)
         return z, z_loss
 
     def _decode(
@@ -89,14 +91,16 @@ class VAE(nn.Module):
         output = self.decoder(masked_input, gate, cell)
         return output, z
 
-    def _activation(self, output: torch.Tensor, channels: int) -> torch.Tensor:
+    def _activation(
+        self, output: torch.Tensor, channels: int
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         onsets, velocities, offsets = torch.split(output, channels, dim=-1)
 
         onsets = self.onsets_act(onsets)
         velocities = self.velocities_act(velocities)
         offsets = self.offsets_act(offsets)
 
-        return torch.cat((onsets, velocities, offsets), -1)
+        return onsets, velocities, offsets
 
     def _init_params(self, m) -> None:
         if type(m) == nn.Linear:

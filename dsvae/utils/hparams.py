@@ -23,10 +23,14 @@ class HParams(dict):
 
     def _parse(self):
         """Parse arguments if run in python shell."""
-        if ((get_ipython().__class__.__name__ == 'NoneType') & (not bool(int(os.environ["DEBUG"])))):
+        if (get_ipython().__class__.__name__ == "NoneType") & (
+            not bool(int(os.environ["DEBUG"]))
+        ):
             parser = ArgumentParser()
             for key, value in self.items():
-                parser.add_argument(f"--{key}", type=type(value), default=value, required=False)
+                parser.add_argument(
+                    f"--{key}", type=type(value), default=value, required=False
+                )
             args = parser.parse_args()
             for key, value in args.__dict__.items():
                 self[key] = value
@@ -42,7 +46,11 @@ class HParams(dict):
         self["input_shape"] = (self.sequence_length, self.input_size)
         if self.max_anneal > self.epochs:
             self.max_anneal = self.epochs
-            logging.getLogger(__name__).warning("max_anneal is greater than epochs - forcing max_anneal=epochs")
+            logging.getLogger(__name__).warning(
+                "max_anneal is greater than epochs - forcing max_anneal=epochs"
+            )
         if self.warm_latent > self.epochs:
             self.warm_latent = self.epochs
-            logging.getLogger(__name__).warning("warm_latent is greater than epochs - forcing warm_latent =epochs")
+            logging.getLogger(__name__).warning(
+                "warm_latent is greater than epochs - forcing warm_latent =epochs"
+            )

@@ -18,8 +18,12 @@ from dsvae.utils import (
 )
 
 
-def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logger):
-    
+def train(
+    run_name: str,
+    hparams: Dict[str, Union[str, int, float, bool]],
+    logger: logging.Logger,
+):
+
     save_dir = Path(f"outputs/models/{run_name}")
     if not save_dir.is_dir():
         os.mkdir(save_dir)
@@ -34,10 +38,10 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
 
     path_to_data = Path(os.environ["DATA_SOURCE_DIR"])
     if bool(int(os.environ["DEBUG"])):
-        logger.info('DEBUG')
-        path_to_data = Path(os.environ["DATA_SOURCE_DIR"]) / 'test'
+        logger.info("DEBUG")
+        path_to_data = Path(os.environ["DATA_SOURCE_DIR"]) / "test"
     else:
-        path_to_data = Path(os.environ["DATA_SOURCE_DIR"]) / 'full'
+        path_to_data = Path(os.environ["DATA_SOURCE_DIR"]) / "full"
     if path_to_data.is_dir():
         logger.info(f"Loading data from {path_to_data}")
     else:
@@ -58,7 +62,7 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
     logger.info(f"Data loader is using {hparams.num_workers} worker threads")
 
     # model
-    model = VAE(hparams, loaders["train"].channels)
+    model = VAE(hparams)
     optimizer = torch.optim.Adam(model.parameters(), lr=hparams.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=30, verbose=True, threshold=1e-7
@@ -88,12 +92,10 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
         logger.info(f"Teacher forcing ratio is {teacher_force_ratio}")
 
         # beta_factor we need an inverse anneal
-        # we also force beta_factor to equal 1 in the first three epochs 
+        # we also force beta_factor to equal 1 in the first three epochs
         beta_threshold = 1e-3
         if epoch < 3:
-            beta_factor = torch.tensor(
-                1, dtype=torch.float, device=device
-            )
+            beta_factor = torch.tensor(1, dtype=torch.float, device=device)
         else:
             beta_factor = torch.tensor(
                 hparams.beta * (1 - linear_anneal(epoch, hparams.warm_latent)),
@@ -104,15 +106,21 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
 
         # initialize losses
         loss_dict = dict(train=0, valid=0, test=0)
-        r_losses = 0.
-        z_losses = 0.
+        r_losses = 0.0
+        z_losses = 0.0
 
         model.train()
         for (input, target, frame_index, filename) in loaders["train"]:
             # forward
             input = input.to(device, non_blocking=True)
             target = target.to(device, non_blocking=True)
-            output, z, z_loss = model(input, delta_z, teacher_force_ratio)
+            onsets, offsets, velocities, z, z_loss = model(
+                input, delta_z, teacher_force_ratio
+            )
+            onsets, velocities, offsets, z, z_loss = vae(
+                sample[0], torch.zeros(hparams.latent_size), torch.tensor(0.0)
+            )
+            output = torch.cat((onsets, velocities, offsets), -1)
 
             # loss
             z_loss *= beta_factor  # scale the KL-divergence
@@ -134,7 +142,13 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
                     # forward
                     input = input.to(device, non_blocking=True)
                     target = target.to(device, non_blocking=True)
-                    output, z, z_loss = model(input, delta_z, teacher_force_ratio)
+                    onsets, velocities, offsets, z, z_loss = model(
+                        input, delta_z, teacher_force_ratio
+                    )
+                    onsets, velocities, offsets, z, z_loss = vae(
+                        sample[0], torch.zeros(hparams.latent_size), torch.tensor(0.0)
+                    )
+                    output = torch.cat((onsets, velocities, offsets), -1)
 
                     # loss
                     z_loss *= beta_factor  # scale the KL-divergence
@@ -169,7 +183,7 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
 
         # best model
         if epoch >= hparams.max_anneal - 1:
-            if (loss_dict["test"] < best_loss):
+            if loss_dict["test"] < best_loss:
                 early_stop_count = 0
                 # save
                 best_loss = loss_dict["test"]
@@ -177,16 +191,22 @@ def train(run_name: str, hparams: Dict[str, Union[str, int, float, bool]], logge
                 if bool(int(os.environ["DEBUG"])):
                     logger.warning("Model will not be saved in DEBUG mode")
                 else:
-                    logger.info(f"Saving model snapshot to {save_dir}/latest.pt with loss: {best_loss}")
+                    logger.info(
+                        f"Saving model snapshot to {save_dir}/latest.pt with loss: {best_loss}"
+                    )
                     torch.save(model.state_dict(), f"{save_dir}/latest.pt")
             else:
                 early_stop_count += 1
 
             # early stopping
-            if (early_stop_count >= hparams.early_stop):
-                logger.info(f"Best loss: {best_loss}; model location: {save_dir}/latest.pt")
+            if early_stop_count >= hparams.early_stop:
+                logger.info(
+                    f"Best loss: {best_loss}; model location: {save_dir}/latest.pt"
+                )
                 # wandb.save('../outputs/models/latest.pt')
-                logger.info(f"Reached early stopping threshold of {hparams.early_stop} epochs.")
+                logger.info(
+                    f"Reached early stopping threshold of {hparams.early_stop} epochs."
+                )
                 wandb.save(f"{save_dir}/latest.pt")
                 break
     wandb.save(f"{save_dir}/latest.pt")

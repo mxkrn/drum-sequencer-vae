@@ -9,8 +9,8 @@ def test_lstm_decoder(sample, hparams, channels):
     hparams.bidirectional = True
     hparams.n_layers = 2
     hparams.hidden_factor = 4
-    hparams.input_size = channels*3
-    
+    hparams.input_size = channels * 3
+
     gate = torch.zeros([hparams.hidden_factor, sample[0].shape[0], hparams.hidden_size])
     cell = gate.clone()
 
@@ -20,11 +20,11 @@ def test_lstm_decoder(sample, hparams, channels):
     assert out.shape == sample[0].shape
 
     # bidirectional = False
-    hparams.input_size = channels*3
+    hparams.input_size = channels * 3
     hparams.bidirectional = False
     hparams.hidden_factor = 2
 
-    hparams.input_size = channels*3
+    hparams.input_size = channels * 3
     gate = torch.zeros([hparams.hidden_factor, sample[0].shape[0], hparams.hidden_size])
     cell = gate.clone()
 
@@ -36,11 +36,11 @@ def test_lstm_decoder(sample, hparams, channels):
     # one layer
     hparams.n_layers = 1
     hparams.hidden_factor = 1
-    hparams.lstm_dropout = 0.
-    hparams.input_size = channels*3
+    hparams.lstm_dropout = 0.0
+    hparams.input_size = channels * 3
     gate = torch.zeros([hparams.hidden_factor, sample[0].shape[0], hparams.hidden_size])
     cell = gate.clone()
-    
+
     decoder = LSTMDecoder(hparams)
     out = decoder(sample[0], gate, cell)
 

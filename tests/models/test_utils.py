@@ -7,14 +7,14 @@ def test_note_dropout():
     note_dropout = NoteDropout()
 
     input = torch.ones((2, 16, 27))
-    
+
     # should be equal to input - 100% teacher forcing
-    ratio = torch.tensor(1.)
+    ratio = torch.tensor(1.0)
     output = note_dropout(input, ratio)
     assert torch.all(torch.eq(input, output))
-    
+
     # should be all zero - 0% teacher forcing
-    ratio = torch.tensor(0.)
+    ratio = torch.tensor(0.0)
     output = note_dropout(input, ratio)
     assert torch.all(torch.eq(output, torch.zeros(input.shape)))
 

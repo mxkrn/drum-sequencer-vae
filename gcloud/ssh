@@ -1,1 +1,1 @@
-gcloud beta compute ssh --zone "us-central1-a" "gpu-training-instance" --project "drum-sequencer-vae-training"
+gcloud beta compute ssh --zone "us-central1-b" "gpu-training-instance-1" --project "drum-sequencer-vae-training"

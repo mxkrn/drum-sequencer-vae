@@ -29,9 +29,7 @@ def test_train_test_split_unique(path_to_data):
 
     data_splits = {"train": 0.4, "valid": 0.3, "test": 0.3}
 
-    split_files = train_test_split(
-        files, splits=data_splits
-    )
+    split_files = train_test_split(files, splits=data_splits)
 
     train_names = set([ds.name for ds in split_files["train"]])
     valid_names = set([ds.name for ds in split_files["valid"]])
@@ -54,10 +52,8 @@ def test_train_test_split_invalid_splits():
     ]
     for data_splits in data_splits_list:
         with pytest.raises(AssertionError):
-            train_test_split(
-                files,
-                data_splits
-            )
+            train_test_split(files, data_splits)
+
 
 # def test_gmd_dataset_constructor(path_to_data: Path, files: List[Path]):
 #     ds = GMDMidiStreamDataset(path_to_data)
