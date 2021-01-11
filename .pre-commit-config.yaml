@@ -19,12 +19,12 @@ repos:
       verbose: true
       pass_filenames: false
       always_run: true
-      stages: [push]
-    - id: mypy
-      name: mypy
-      entry: mypy src
-      verbose: true
-      always_run: true
-      language: python
-      stages: [push]
-      pass_filenames: false
+      stages: [commit]
+#    - id: mypy
+#      name: mypy
+#      entry: mypy dsvae
+#      verbose: true
+#      always_run: true
+#      language: python
+#      stages: [push]
+#      pass_filenames: false
