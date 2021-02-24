@@ -1,5 +1,11 @@
 # drum-sequencer-vae
 
+This repository exists to contain the training process of several drum sequencer features.
+
+1. GrooVAE - learns to add expression to quantized drum rhythms
+2. Syncopate - learns to generate syncopated variations of drum rhythms
+3. Fills - the network can be conditioned on beat type to selectively generate fills or beats
+
 ## Installation
 
 Create the conda environment:

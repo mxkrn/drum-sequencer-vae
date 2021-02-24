@@ -117,9 +117,9 @@ def train(
             onsets, offsets, velocities, z, z_loss = model(
                 input, delta_z, teacher_force_ratio
             )
-            onsets, velocities, offsets, z, z_loss = vae(
-                sample[0], torch.zeros(hparams.latent_size), torch.tensor(0.0)
-            )
+            # onsets, velocities, offsets, z, z_loss = vae(
+            #     sample[0], torch.zeros(hparams.latent_size), torch.tensor(0.0)
+            # )
             output = torch.cat((onsets, velocities, offsets), -1)
 
             # loss
@@ -145,9 +145,9 @@ def train(
                     onsets, velocities, offsets, z, z_loss = model(
                         input, delta_z, teacher_force_ratio
                     )
-                    onsets, velocities, offsets, z, z_loss = vae(
-                        sample[0], torch.zeros(hparams.latent_size), torch.tensor(0.0)
-                    )
+                    # onsets, velocities, offsets, z, z_loss = vae(
+                    #     sample[0], torch.zeros(hparams.latent_size), torch.tensor(0.0)
+                    # )
                     output = torch.cat((onsets, velocities, offsets), -1)
 
                     # loss

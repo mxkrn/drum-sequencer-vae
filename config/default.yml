@@ -5,19 +5,19 @@ batch_size: 256  # input_tensor.shape[0]
 input_size: 27  # input_tensor.shape[-1]
 sequence_length: 16  # input_tensor.shape[1]
 file_shuffle: True  # shuffles data loading across different MIDI patterns
-pattern_shuffle: True  # shuffle sub-patterns within a MIDI pattern
-scale_factor: 4
+pattern_shuffle: False  # shuffle sub-patterns within a MIDI pattern
+scale_factor: 1
 # model
 model_type: "vae"
 encoder: "lstm"
 decoder: "lstm"
 n_layers: 2
 hidden_size: 512
-latent_size: 4
+latent_size: 8
 bidirectional: False
 attention: False
 disentangle: False
-lstm_dropout: 0.25
+lstm_dropout: 0.3
 # optimization
 beta: 10000
 max_anneal: 200
