@@ -5,40 +5,34 @@ import torch
 import torch.nn.functional as F
 from typing import Dict, Union
 import wandb
-import yaml
 
 from dsvae.data.loader import NoteSequenceDataLoader
 from dsvae.models.vae import VAE
 from dsvae.utils import (
     get_device,
+    get_hparams,
     init_seed,
     init_logger,
     linear_anneal,
     reconstruction_loss,
+    Debug,
 )
 
 
-def train(
-    run_name: str,
-    hparams: Dict[str, Union[str, int, float, bool]],
-    logger: logging.Logger,
-):
+DEBUG = Debug()
 
-    save_dir = Path(f"outputs/models/{run_name}")
-    if not save_dir.is_dir():
-        os.mkdir(save_dir)
 
+def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logger):
     device = get_device(hparams)
     logger.info(f"Using device {device}")
-    logger.info(f"hyperparameters: \n{hparams}")
+    logger.info(f"Using hyperparameters: \n{hparams}")
 
     # data
     loaders = dict()
-    num_batches = dict()
+    lengths = dict()
 
     path_to_data = Path(os.environ["DATA_SOURCE_DIR"])
-    if bool(int(os.environ["DEBUG"])):
-        logger.info("DEBUG")
+    if DEBUG:
         path_to_data = Path(os.environ["DATA_SOURCE_DIR"]) / "test"
     else:
         path_to_data = Path(os.environ["DATA_SOURCE_DIR"]) / "full"
@@ -57,8 +51,8 @@ def train(
             scale_factor=hparams.scale_factor,
             num_workers=hparams.num_workers,
         )
-        num_batches[split] = len([x for x in loaders[split]])
-    logger.info(f"Batches per split: {num_batches}")
+        lengths[split] = len([x for x in loaders[split]])
+    logger.info(f"Batches per split: {lengths}")
     logger.info(f"Data loader is using {hparams.num_workers} worker threads")
 
     # model
@@ -162,9 +156,9 @@ def train(
 
         # normalize losses
         for split, loss in loss_dict.items():
-            loss_dict.update({split: loss / num_batches[split]})
-        r_losses /= sum(num_batches.values())
-        z_losses /= sum(num_batches.values())
+            loss_dict.update({split: loss / lengths[split]})
+        r_losses /= sum(lengths.values())
+        z_losses /= sum(lengths.values())
 
         scheduler.step(loss_dict["valid"])
 
@@ -187,9 +181,13 @@ def train(
                 early_stop_count = 0
                 # save
                 best_loss = loss_dict["test"]
+                save_dir = Path(f"outputs/models/{run.name}")
+                if not save_dir.is_dir():
+                    os.mkdir(save_dir)
+                save_path = f"{save_dir}/latest.pt"
 
-                if bool(int(os.environ["DEBUG"])):
-                    logger.warning("Model will not be saved in DEBUG mode")
+                if DEBUG:
+                    logger.warning("Model will not be saved in debug mode")
                 else:
                     logger.info(
                         f"Saving model snapshot to {save_dir}/latest.pt with loss: {best_loss}"
@@ -209,10 +207,29 @@ def train(
                 )
                 wandb.save(f"{save_dir}/latest.pt")
                 break
-    wandb.save(f"{save_dir}/latest.pt")
-    wandb.save(f"{save_dir}/config.yml")
     logger.info("Reached maximum number of epochs")
 
 
-def resume(run_name, logger):
-    raise NotImplementedError
+if __name__ == "__main__":
+    # initialize monitoring
+    run = wandb.init(
+        dir="outputs",
+        # allow_val_change=True
+    )
+
+    # ops
+    if DEBUG:
+        logger = init_logger(logging.DEBUG)
+        logger.debug("Running train.py in debug mode")
+    else:
+        logger = init_logger(logging.INFO)
+
+    # get hparams and add to config
+    hparams = get_hparams()
+    # for k, v in hparams.__dict__.items():
+    #     wandb.config[k] = v
+    wandb.config.update(hparams, allow_val_change=True)
+
+    # run
+    # hparams = wandb.config
+    train(hparams, logger)

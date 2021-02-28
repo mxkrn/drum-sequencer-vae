@@ -2,7 +2,7 @@ import json
 import pytest
 from pathlib import Path
 
-from dsvae.utils.hparams import HParams
+from dsvae.utils.hparams import get_hparams
 from dsvae.utils.ops import init_logger
 from dsvae.data.loader import NoteSequenceDataLoader
 
@@ -29,8 +29,7 @@ def pitch_mapping(path_to_data):
 
 @pytest.fixture
 def hparams():
-    filepath = "config/debug.yml"
-    hparams = HParams.from_yaml(filepath)
+    hparams = get_hparams()
     return hparams
 
 
