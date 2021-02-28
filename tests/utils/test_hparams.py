@@ -1,3 +1,7 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from yaml import load, dump, Loader, Dumper
+
 from dsvae.utils.hparams import AttrDict, process, get_hparams
 
 
@@ -6,6 +10,24 @@ def test_attr_dict():
 
     attr_dict = AttrDict(foo=expected)
     assert attr_dict.foo == expected
+
+
+def test_attr_dict_from_yaml():
+    doc = """
+    a: 1
+    b: 2
+    """
+    doc = load(doc, Loader=Loader)
+
+    with TemporaryDirectory() as tmpdir:
+        filename = Path(tmpdir) / "doc.yaml"
+        with open(filename, "w") as f:
+            dump(doc, f)
+
+        attr_dict = AttrDict.from_yaml(filename)
+
+        assert attr_dict.a == 1
+        assert attr_dict.b == 2
 
 
 def test_get_hparams():

@@ -19,13 +19,11 @@ from dsvae.utils import (
 )
 
 
-DEBUG = Debug()
+# DEBUG = Debug()
 
 
 def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logger):
     device = get_device(hparams)
-    logger.info(f"Using device {device}")
-    logger.info(f"Using hyperparameters: \n{hparams}")
 
     # data
     loaders = dict()
@@ -211,6 +209,13 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
 
 
 if __name__ == "__main__":
+    hparams = get_hparams()
+    global DEBUG
+    if bool(hparams.debug):
+        DEBUG = bool(hparams.debug)
+    else:
+        DEBUG = Debug()
+
     # ops
     if DEBUG:
         run = wandb.init(dir="outputs", mode="offline")

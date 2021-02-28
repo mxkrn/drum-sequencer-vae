@@ -5,7 +5,7 @@ import torch.nn as nn
 import yaml
 import wandb
 
-from dsvae.utils import init_logger, HParams
+from dsvae.utils import init_logger, AttrDict
 from models.vae import VAE
 
 
@@ -39,7 +39,7 @@ def get_model(run_path: str, run_name: str) -> nn.Module:
         if not k in ["_wandb", "wandb_version"]:
             if isinstance(v, dict):
                 hparams[k] = v["value"]
-    hparams = HParams(hparams)
+    hparams = AttrDict(hparams)
     hparams.batch_size = BATCH_SIZE
 
     # load model
