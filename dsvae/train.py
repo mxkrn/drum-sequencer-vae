@@ -211,25 +211,20 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
 
 
 if __name__ == "__main__":
-    # initialize monitoring
-    run = wandb.init(
-        dir="outputs",
-        # allow_val_change=True
-    )
-
     # ops
     if DEBUG:
+        run = wandb.init(dir="outputs", mode="offline")
         logger = init_logger(logging.DEBUG)
         logger.debug("Running train.py in debug mode")
     else:
+        run = wandb.init(
+            dir="outputs",
+        )
         logger = init_logger(logging.INFO)
 
     # get hparams and add to config
     hparams = get_hparams()
-    # for k, v in hparams.__dict__.items():
-    #     wandb.config[k] = v
     wandb.config.update(hparams, allow_val_change=True)
 
     # run
-    # hparams = wandb.config
     train(hparams, logger)
