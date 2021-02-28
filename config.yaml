@@ -34,13 +34,13 @@ disentangle:
   value: false
 early_stop:
   desc: null
-  value: 50
+  value: 30
 encoder:
   desc: null
   value: lstm
 epochs:
   desc: null
-  value: 300
+  value: 250
 file_shuffle:
   desc: null
   value: true
@@ -60,13 +60,13 @@ input_size:
   value: 27
 latent_size:
   desc: null
-  value: 2
+  value: 8
 lr:
   desc: null
-  value: 0.0002
+  value: 0.0001
 lstm_dropout:
   desc: null
-  value: 0.4
+  value: 0.3
 max_anneal:
   desc: null
   value: 200
@@ -81,13 +81,13 @@ num_workers:
   value: 0
 pattern_shuffle:
   desc: null
-  value: true
+  value: false
 scale_factor:
   desc: null
-  value: 4
+  value: 1
 sequence_length:
   desc: null
   value: 16
 warm_latent:
   desc: null
-  value: 150
+  value: 100

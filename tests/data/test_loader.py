@@ -55,6 +55,15 @@ def test_train_test_split_invalid_splits():
             train_test_split(files, data_splits)
 
 
+def test_pattern_shuffle(path_to_data):
+    batch_size = 1
+    loader = NoteSequenceDataLoader(path_to_data, batch_size, "train", False, False)
+    for input, target, _, _ in loader:
+        assert torch.all(torch.eq(input[:, :, :9], target[:, :, :9]))
+        assert torch.all(torch.eq(input[:, :, 9:], torch.zeros(input[:, :, 9:].size())))
+        assert torch.any(torch.ne(target[:, :, 9:], input[:, :, 9:]))
+
+
 # def test_gmd_dataset_constructor(path_to_data: Path, files: List[Path]):
 #     ds = GMDMidiStreamDataset(path_to_data)
 

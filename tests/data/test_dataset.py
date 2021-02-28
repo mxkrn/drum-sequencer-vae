@@ -118,6 +118,17 @@ def test_sequence_to_tensor(files, pitch_mapping):
         # file_hash = midi_file.stem.split("-")
 
 
+def test_scale_factor_equal_one(files, pitch_mapping):
+    scale_factor = 1
+    for midi_file in files:
+        file_hash = midi_file.stem.split("-")
+        length_in_bars = file_hash[-1]
+
+        dataset = NoteSequenceDataset.from_midi(
+            midi_file, pitch_mapping["pitches"], True, scale_factor
+        )
+
+
 def test_dataset_pattern_scale(files, pitch_mapping):
     for scale_factor in [2, 4, 30]:
         for midi_file in files:

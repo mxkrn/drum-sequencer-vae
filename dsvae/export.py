@@ -10,8 +10,8 @@ from models.vae import VAE
 
 
 DEVICE = "cuda:0"
-RUN_NAME = "proud-resonance-206"
-RUN_PATH = "mxkrn/drum-sequencer-vae-dsvae/2vy0x403"
+RUN_NAME = "autumn-energy-213"
+RUN_PATH = "mxkrn/drum-sequencer-vae-dsvae/3729sf5a"
 BATCH_SIZE = 10
 OPSET_VERSION = 12
 LOGGER = init_logger()
