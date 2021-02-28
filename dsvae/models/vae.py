@@ -1,3 +1,5 @@
+from __future__ import annotations
+from enum import Enum
 import torch
 import torch.nn as nn
 from typing import Tuple, Dict, Union
@@ -5,6 +7,22 @@ from typing import Tuple, Dict, Union
 from dsvae.models.encoder import LSTMEncoder
 from dsvae.models.decoder import LSTMDecoder
 from dsvae.models.utils import NoteDropout
+
+
+class TrainTask(Enum):
+    GROOVE = 1
+    SYNCOPATE = 2
+    FILL = 3
+
+    @staticmethod
+    def from_str(label: str) -> TrainTask:
+        try:
+            return TrainTask[label.upper()]
+        except KeyError:
+            raise ValueError(f"Could not create TrainTask from label: {label}")
+
+    def __str__(self):
+        return self.name.lower()
 
 
 class VAE(nn.Module):
@@ -19,6 +37,7 @@ class VAE(nn.Module):
         self.input_size = hparams.input_size
         self.sequence_length = hparams.sequence_length
         self.batch_size = hparams.batch_size
+        self.task = TrainTask.from_str(hparams.task)
 
         self._build(hparams)
 
@@ -94,6 +113,7 @@ class VAE(nn.Module):
     def _activation(
         self, output: torch.Tensor, channels: int
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        # CHECK
         onsets, velocities, offsets = torch.split(output, channels, dim=-1)
 
         onsets = self.onsets_act(onsets)

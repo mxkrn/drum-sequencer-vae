@@ -13,16 +13,22 @@ attention:
   value: false
 batch_size:
   desc: null
-  value: 256
+  value: 128
 beta:
   desc: null
-  value: 10000
+  value: 0.2
 bidirectional:
   desc: null
   value: false
+channels:
+  desc: null
+  value: 9
 dataset:
   desc: null
   value: gmd
+debug:
+  desc: null
+  value: false
 decoder:
   desc: null
   value: lstm
@@ -40,7 +46,7 @@ encoder:
   value: lstm
 epochs:
   desc: null
-  value: 250
+  value: 200
 file_shuffle:
   desc: null
   value: true
@@ -60,16 +66,16 @@ input_size:
   value: 27
 latent_size:
   desc: null
-  value: 8
+  value: 32
 lr:
   desc: null
   value: 0.0001
 lstm_dropout:
   desc: null
-  value: 0.3
+  value: 0.2
 max_anneal:
   desc: null
-  value: 200
+  value: 10
 model_type:
   desc: null
   value: vae
@@ -88,6 +94,9 @@ scale_factor:
 sequence_length:
   desc: null
   value: 16
+task:
+  desc: null
+  value: groove
 warm_latent:
   desc: null
-  value: 100
+  value: 50

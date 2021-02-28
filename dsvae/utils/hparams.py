@@ -16,7 +16,6 @@ class AttrDict(dict):
     def from_yaml(filename: str):
         with open(filename, "r") as f:
             data = load(f.read(), Loader=Loader)
-        print(data)
         data_dict = AttrDict(**data)
         return data_dict
 
@@ -28,9 +27,12 @@ def parse(hparams):
     parser = ArgumentParser()
     if not parser.prog == "pytest":
         for key, value in hparams.items():
-            parser.add_argument(
-                f"--{key}", type=type(value), default=value, required=False
-            )
+            if key == "debug":
+                parser.add_argument(f"--debug", action="store_true", required=False)
+            else:
+                parser.add_argument(
+                    f"--{key}", type=type(value), default=value, required=False
+                )
         args = parser.parse_args()
         for key, value in args.__dict__.items():
             hparams[key] = value
@@ -87,6 +89,7 @@ def get_hparams(filename: Optional[str] = None) -> Dict[str, Any]:
             early_stop=30,
             device="",
             debug=False,
+            task="groove",
         )
     hparams = parse(hparams)
     hparams = process(hparams)

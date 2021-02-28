@@ -8,7 +8,7 @@ def reconstruction_loss(input, target, channels):
     target_onsets, target_velocities, target_offsets = torch.split(
         target, channels, dim=-1
     )
-    onsets_loss = F.binary_cross_entropy(onsets, target_onsets, reduction="mean")
-    velocities_loss = F.mse_loss(velocities, target_velocities, reduction="mean")
-    offsets_loss = F.mse_loss(offsets, target_offsets, reduction="mean")
+    onsets_loss = F.binary_cross_entropy(onsets, target_onsets, reduction="sum")
+    velocities_loss = F.mse_loss(velocities, target_velocities, reduction="sum")
+    offsets_loss = F.mse_loss(offsets, target_offsets, reduction="sum")
     return onsets_loss + velocities_loss + offsets_loss

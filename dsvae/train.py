@@ -1,3 +1,4 @@
+from enum import Enum
 import logging
 import os
 from pathlib import Path
@@ -7,7 +8,7 @@ from typing import Dict, Union
 import wandb
 
 from dsvae.data.loader import NoteSequenceDataLoader
-from dsvae.models.vae import VAE
+from dsvae.models.vae import VAE, TrainTask
 from dsvae.utils import (
     get_device,
     get_hparams,
@@ -17,9 +18,6 @@ from dsvae.utils import (
     reconstruction_loss,
     Debug,
 )
-
-
-# DEBUG = Debug()
 
 
 def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logger):
@@ -76,11 +74,19 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
         logger.info(f"Epoch {epoch}")
 
         # annealing
-        teacher_force_ratio = torch.tensor(
-            0.8 * linear_anneal(epoch, hparams.max_anneal) + 0.2,
-            dtype=torch.float,
-            device=device,
-        )
+        if hparams.task == str(TrainTask.SYNCOPATE):
+            # We anneal the teacher force ratio
+            teacher_force_ratio = torch.tensor(
+                0.8 * linear_anneal(epoch, hparams.max_anneal) + 0.2,
+                dtype=torch.float,
+                device=device,
+            )
+        elif hparams.task == str(TrainTask.GROOVE):
+            # By allowing the decoder to learn to copy directly to its outputs,
+            # we incentivize this encoder to ignore onsets  only learn a useful
+            # representation for generating velocities and offsets.
+            teacher_force_ratio = torch.tensor(1.0, dtype=torch.float, device=device)
+
         logger.info(f"Teacher forcing ratio is {teacher_force_ratio}")
 
         # beta_factor we need an inverse anneal
@@ -109,9 +115,6 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
             onsets, offsets, velocities, z, z_loss = model(
                 input, delta_z, teacher_force_ratio
             )
-            # onsets, velocities, offsets, z, z_loss = vae(
-            #     sample[0], torch.zeros(hparams.latent_size), torch.tensor(0.0)
-            # )
             output = torch.cat((onsets, velocities, offsets), -1)
 
             # loss
@@ -137,9 +140,6 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
                     onsets, velocities, offsets, z, z_loss = model(
                         input, delta_z, teacher_force_ratio
                     )
-                    # onsets, velocities, offsets, z, z_loss = vae(
-                    #     sample[0], torch.zeros(hparams.latent_size), torch.tensor(0.0)
-                    # )
                     output = torch.cat((onsets, velocities, offsets), -1)
 
                     # loss
