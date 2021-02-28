@@ -39,4 +39,8 @@ def get_device(hparams):
             torch.backends.cudnn.benchmark = True  # Enable CuDNN optimization
         except RuntimeError:
             device = torch.device("cpu")
+    device_properties = torch.cuda.get_device_properties(device)
+    logging.getLogger(__name__).info(
+        f"Using device:\nName: {device_properties.name}\nVRAM: {device_properties.total_memory}\nProcessor_count: {device_properties.multi_processor_count}"
+    )
     return device

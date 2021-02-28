@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from pathlib import Path
+import sys
 import torch
 import torch.nn as nn
 import yaml
@@ -34,6 +35,7 @@ def get_model(run_path: str, run_name: str) -> nn.Module:
         wandb.restore("config.yaml", run_path=run_path, replace=True),
         Loader=yaml.FullLoader,
     )
+
     hparams = {}
     for k, v in config.items():
         if not k in ["_wandb", "wandb_version"]:
@@ -87,15 +89,16 @@ def onnx_export(run_path: str, run_name: str) -> None:
         },
     )
     LOGGER.info(f"Exported model to {save_path}")
+    sys.exit()
 
 
 if __name__ == "__main__":
-    # parser = ArgumentParser()
-    # parser.add_argument(
-    #     "--run_name", default=RUN_NAME, type=str, help="Wandb run name of best run"
-    # )
-    # parser.add_argument(
-    #     "--run_path", default=RUN_PATH, type=str, help="Wandb run path of best run"
-    # )
-    # args = parser.parse_args()
-    onnx_export(RUN_PATH, RUN_NAME)
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--run_name", default=RUN_NAME, type=str, help="Wandb run name of best run"
+    )
+    parser.add_argument(
+        "--run_path", default=RUN_PATH, type=str, help="Wandb run path of best run"
+    )
+    args = parser.parse_args()
+    onnx_export(args.run_path, args.run_name)
