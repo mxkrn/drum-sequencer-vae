@@ -170,23 +170,3 @@ def train_test_split(
         #     split_datasets[key].append()
 
     return split_files_dict
-
-
-# def check_splits(split_datasets: Dict[str, List[Dataset]], total_length: int):
-#     """Check and log some information on the dataset splits."""
-#     train_length = len(split_datasets["train"])
-#     valid_length = len(split_datasets["valid"])
-#     test_length = len(split_datasets["test"])
-
-#     logger.info(
-#         f"Train split contains {train_length} files which is "
-#         f"{train_length / total_length}% of the dataset"
-#     )
-#     logger.info(
-#         f"Valid split contains {valid_length} files which is :"
-#         f"{valid_length / total_length}% of the dataset"
-#     )
-#     logger.info(
-#         f"Test split contains {test_length} files which is "
-#         f"{test_length / total_length}% of the dataset"
-#     )
