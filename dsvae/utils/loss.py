@@ -10,5 +10,5 @@ def reconstruction_loss(input, target, channels):
     )
     onsets_loss = F.binary_cross_entropy(onsets, target_onsets, reduction="sum")
     velocities_loss = F.mse_loss(velocities, target_velocities, reduction="sum")
-    offsets_loss = F.mse_loss(offsets, target_offsets, reduction="sum")
+    offsets_loss = F.l1_loss(offsets, target_offsets, reduction="sum")
     return onsets_loss + velocities_loss + offsets_loss
