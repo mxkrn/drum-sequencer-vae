@@ -28,7 +28,7 @@ def parse(hparams):
     if not parser.prog == "pytest":
         for key, value in hparams.items():
             if key == "debug":
-                parser.add_argument(f"--debug", action="store_true", required=False)
+                parser.add_argument("--debug", action="store_true", required=False)
             else:
                 parser.add_argument(
                     f"--{key}", type=type(value), default=value, required=False
@@ -61,6 +61,7 @@ def process(hparams):
 
 def get_hparams(filename: Optional[str] = None) -> Dict[str, Any]:
     if filename is not None:
+        logging.getLogger(__name__).info(f"Loading hparams from {filename}")
         hparams = AttrDict.from_yaml(filename)
     else:
         hparams = AttrDict(
@@ -93,4 +94,7 @@ def get_hparams(filename: Optional[str] = None) -> Dict[str, Any]:
         )
     hparams = parse(hparams)
     hparams = process(hparams)
+    logging.getLogger(__name__).debug("HParams:")
+    for k, v in hparams.items():
+        logging.getLogger(__name__).debug(f"{k}: {v}")
     return hparams

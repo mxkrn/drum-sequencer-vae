@@ -209,17 +209,18 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
 
 
 if __name__ == "__main__":
-    hparams = get_hparams()
+    logger = init_logger(logging.DEBUG)
+    hparams = get_hparams(filename=str(Path.cwd() / "config/groovae.yml"))
     global DEBUG
     if bool(hparams.debug):
         DEBUG = bool(hparams.debug)
     else:
-        DEBUG = Debug()
+        DEBUG = False
 
     # ops
     if DEBUG:
         run = wandb.init(dir="outputs", mode="offline")
-        logger = init_logger(logging.DEBUG)
+        # logger = init_logger(logging.DEBUG)
         logger.debug("Running train.py in debug mode")
     else:
         run = wandb.init(
@@ -228,7 +229,6 @@ if __name__ == "__main__":
         logger = init_logger(logging.INFO)
 
     # get hparams and add to config
-    hparams = get_hparams()
     wandb.config.update(hparams, allow_val_change=True)
 
     # run
