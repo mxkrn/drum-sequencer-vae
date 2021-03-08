@@ -89,6 +89,32 @@ def test_polyphonic_multiple_bars(files, pitch_mapping):
             assert round(dataset.duration_seconds, 5) == 2.55208
 
 
+def test_microtiming_extraction(files, pitch_mapping):
+    for midi_file in files:
+        if midi_file.stem == "M-O-1":  # monophonic 1-bar with offsets
+            dataset = NoteSequenceDataset.from_midi(
+                midi_file, pitch_mapping["pitches"], False, 1
+            )
+
+            # test notes
+            notes = dataset.base_note_sequence.notes
+            assert len(notes) == 7
+
+            expected = [
+                (0, 0),
+                (1, 0.3333),
+                (4, 0.1667),
+                (7, -0.5),
+                (8, 0),
+                (12, 0),
+                (14, -0.25),
+            ]
+            sample = dataset[0]
+            target = sample[1]
+            for step, mt in expected:
+                assert round(target[step][18].item(), 4) == mt
+
+
 def test_sequence_to_tensor(files, pitch_mapping):
     for midi_file in files:
         dataset = NoteSequenceDataset.from_midi(
