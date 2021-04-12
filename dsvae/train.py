@@ -1,9 +1,7 @@
-from enum import Enum
 import logging
 import os
 from pathlib import Path
 import torch
-import torch.nn.functional as F
 from typing import Dict, Union
 import wandb
 
@@ -12,11 +10,9 @@ from dsvae.models.vae import VAE, TrainTask
 from dsvae.utils import (
     get_device,
     get_hparams,
-    init_seed,
     init_logger,
     linear_anneal,
     reconstruction_loss,
-    Debug,
 )
 
 
@@ -91,7 +87,6 @@ def train(hparams: Dict[str, Union[str, int, float, bool]], logger: logging.Logg
 
         # beta_factor we need an inverse anneal
         # we also force beta_factor to equal 1 in the first three epochs
-        beta_threshold = 1e-3
         if epoch < 3:
             beta_factor = torch.tensor(1, dtype=torch.float, device=device)
         else:
